@@ -28,7 +28,7 @@
 
   </div>
  <div class="col-sm border border-primary">
-  <form action="/" method="post">
+  <form>
     <h2>Sign In</h2>
     <div class="form-group">
       <label for="email">Email:</label>
@@ -58,29 +58,34 @@
 
 <script>
 
-//document.getElementById("submit").addEventListener('click',UserSignUp);
+document.getElementById("submit").addEventListener('click',UserSignIn);
 
-async function UserSignUp(e){
+async function UserSignIn(e){
   e.preventDefault();
 
-  const name=document.getElementById('name').value;
   const email=document.getElementById('email').value;
   const password=document.getElementById('password').value;
 
   const user={
-    name:name,
     email:email,
     password:password
   }
 console.log('form data=',user);
-const response=await axios.post('/newusersignup',user);
+const response=await axios.post('/login',user);
 
 const status=response.data.status;
-if(status){
+if(status==1){
 
-  alert('user created successfully');
+  alert('User Login Successful');
 }
 
+if(status==0){
+console.log('unauthorsed access');
+}
+
+if(status==3){
+console.log('user not found');
+}
 
 }
 

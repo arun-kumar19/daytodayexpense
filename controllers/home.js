@@ -109,36 +109,38 @@ if(checkemail) {
   }
 
   if(checkemail.length==0){
+    console.log('seems this condition never gets true');
    return  res.render('login',{
       status:0,
       path:'/'
     });
     } 
-    if(checkemail && passwordstatus==1){
+    if(checkemail && passwordstatus==1){/* 
     console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
   username=checkemail.name;
   res.render('profile',{
     name:username,
     path:'/profile'
-  })
+  }) */
+
+  res.json({'status':1})//password matched
 }
 
 if(checkemail && passwordstatus==2){
-  console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
+  /* console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
   return  res.render('login',{
     status:2,
     path:'/'
-  });
+  }); */
+
+  res.status(401).json({'status':0})//password not matched
 }
 
 }
 
 else{
 
-  return  res.render('login',{
-    status:3,
-    path:'/'
-  });
+  res.status(404).json({'status':3})//user not found
   
 }
 
