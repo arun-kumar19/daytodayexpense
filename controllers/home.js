@@ -1,4 +1,5 @@
 const user=require('../models/signup');
+const Sequelize=require('sequelize');
 
 
 exports.getSignUp=(req,res)=>{
@@ -9,6 +10,13 @@ exports.getSignUp=(req,res)=>{
   })
 }
 
+exports.getSignIn=(req,res)=>{
+  
+  res.render('login',{
+    path:'/',
+    status:true
+  })
+}
 
 exports.getDemo=(req,res)=>{
   
@@ -28,15 +36,12 @@ exports.getUser=async (req,res)=>{
   console.log('checkuser=',checkUser,' userlength=',checkUser.length);
   if(checkUser.length>0){
 
-  return res.render('signup',{
-      status:1,
-      path:'/'
-    })
+  return res.json({'status':0})//user exists
   }
 
   user.create({name,email,password}).then(result=>{
     console.log('user created succesfully');
-    res.redirect('/login');
+    res.json({'status':1});//user created
   }).catch(err=>{
     console.log('soemthing went wrong =',err);
   })
@@ -79,6 +84,62 @@ exports.getLogin=async(req,res,next)=>{
     name:username,
     path:'/profile'
   })
+}
+
+}
+
+
+exports.getLogin=async(req,res,next)=>{
+  let username;
+  let passwordstatus;
+  const {email,password}=req.body;
+
+  console.log('email:',email,' and password:',password);
+
+  const checkemail=await user.findOne({where:{
+    email:email
+  }})
+console.log('result=',checkemail);
+if(checkemail) {
+  if(checkemail.password==password){
+      passwordstatus=1;
+  }
+  else{
+    passwordstatus=2;
+  }
+
+  if(checkemail.length==0){
+   return  res.render('login',{
+      status:0,
+      path:'/'
+    });
+    } 
+    if(checkemail && passwordstatus==1){
+    console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
+  username=checkemail.name;
+  res.render('profile',{
+    name:username,
+    path:'/profile'
+  })
+}
+
+if(checkemail && passwordstatus==2){
+  console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
+  return  res.render('login',{
+    status:2,
+    path:'/'
+  });
+}
+
+}
+
+else{
+
+  return  res.render('login',{
+    status:3,
+    path:'/'
+  });
+  
 }
 
 }

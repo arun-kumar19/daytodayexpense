@@ -28,7 +28,7 @@
 
   </div>
  <div class="col-sm border border-primary">
-  <form action="/signup" method="post">
+  <form>
     <h2>Sign Up</h2>
     <div class="form-group">
       <label for="name">Name:</label>
@@ -43,7 +43,7 @@
       <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
     </div>
     <button type="submit" class="btn btn-primary" id="submit">Sign Up</button>
-    <p><% if(status){%><a href="/login">User Already Registered. Login Here</a><%}%></p>
+    <p id="message"></p>
   </form>
 </div>
 <div class="col-sm">
@@ -59,32 +59,44 @@
 
 <script>
 
-//document.getElementById("submit").addEventListener('click',UserSignUp);
+document.getElementById("submit").addEventListener('click',UserSignUp);
 
 async function UserSignUp(e){
   e.preventDefault();
-
   const name=document.getElementById('name').value;
   const email=document.getElementById('email').value;
   const password=document.getElementById('password').value;
 
+  if(name && email && password){
   const user={
     name:name,
     email:email,
     password:password
   }
 console.log('form data=',user);
-const response=await axios.post('/newusersignup',user);
+const response=await axios.post('/signup',user);
 
 const status=response.data.status;
-if(status){
+console.log('response data=',status);
+if(status==1){
 
   alert('user created successfully');
+  document.getElementById('message').innerHTML=`<a href='login'>Login Now</a>`
+  document.getElementById('name').value='';
+  document.getElementById('email').value='';
+  document.getElementById('password').value='';
 }
+if(status==0){
 
+alert('User Already Exists! Login Now or try creating with different email id');
+document.getElementById('message').innerHTML=`<a href='login'> Login Now</a>`
+}
+  }
+ else
+    alert('please fill complete form.') 
 
 }
-
+//<a>User Already Registered. Login Here</a>
 </script>
 
 </body>

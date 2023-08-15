@@ -7,7 +7,9 @@ const homeController=require('../controllers/home');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-router.get('/', homeController.getSignUp);
+router.get('/', homeController.getSignIn);
+
+router.post('/', homeController.getLogin);
 
 router.get('/demo', homeController.getDemo);
 
