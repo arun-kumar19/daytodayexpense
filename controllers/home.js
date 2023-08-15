@@ -1,6 +1,6 @@
 const user=require('../models/signup');
 const Sequelize=require('sequelize');
-
+const bcrypt=require('bcrypt');
 
 exports.getSignUp=(req,res)=>{
   
@@ -26,6 +26,7 @@ exports.getDemo=(req,res)=>{
 }
 
 exports.getUser=async (req,res)=>{
+  const saltRounds = 10;
   const {name,email,password}=req.body;
   console.log('values=',name,'|',email,'|',password);
 
@@ -38,14 +39,21 @@ exports.getUser=async (req,res)=>{
 
   return res.json({'status':0})//user exists
   }
-
-  user.create({name,email,password}).then(result=>{
-    console.log('user created succesfully');
-    res.json({'status':1});//user created
+else{
+  bcrypt.hash(password,saltRounds,(err,hash)=>{
+    if(err)
+    console.error('Error hashing password',err);
+  else{
+    //console.log('hash password=',hash);
+  user.create({name,email,password:hash}).then(result=>{
+    //console.log('user created succesfully');
+    res.status(201).json({'status':1});//user created
   }).catch(err=>{
     console.log('soemthing went wrong =',err);
   })
-  
+}
+})
+}
 }
 
 exports.getSuccess=(req,res,next)=>{
@@ -60,35 +68,39 @@ exports.getSuccess=(req,res,next)=>{
 
 exports.getLogin=async(req,res,next)=>{
   let username;
+  
   const {email,password}=req.body;
-
-  console.log('email:',email,' and password:',password);
-
-  const checkuser=await user.findAll({where:{
+  //console.log('email1:',email,' and password1:',password);
+  const checkuser=await user.findOne({where:{
     email:email,
-    password:password
   }})
   //console.log('checkuser=',checkuser);
   
+  if(!checkuser){
+    //console.log('error');
+    return res.status(404).json({'status':2});
+  }
+      //console.log('checkuser=',checkuser.name);
+      bcrypt.compare(password,checkuser.password,(err,result)=>{
+        if(err){
+          console.log('error=',err);
+          res.status(401).json({'status':0});
+        }
+        else{
+        if(result){
+          console.log('hello=',result);
+           username=checkuser.name;
+          res.status(201).json({'status':1})
+        }
+        else{
+          res.status(401).json({'status':0})
+        }
+      }
+        })
+  }
 
-  if(checkuser.length==0){
-   return  res.render('login',{
-      status:0,
-      path:'/login'
-    });
-    } 
-    if(checkuser){
-    console.log('checkuser=',checkuser[0].name,' userlength=',checkuser.length);
-  username=checkuser[0].name;
-  res.render('profile',{
-    name:username,
-    path:'/profile'
-  })
-}
 
-}
-
-
+/* 
 exports.getLogin=async(req,res,next)=>{
   let username;
   let passwordstatus;
@@ -121,7 +133,7 @@ if(checkemail) {
   res.render('profile',{
     name:username,
     path:'/profile'
-  }) */
+  }) 
 
   res.json({'status':1})//password matched
 }
@@ -131,7 +143,7 @@ if(checkemail && passwordstatus==2){
   return  res.render('login',{
     status:2,
     path:'/'
-  }); */
+  }); 
 
   res.status(401).json({'status':0})//password not matched
 }
@@ -144,4 +156,5 @@ else{
   
 }
 
-}
+} 
+*/

@@ -71,22 +71,29 @@ async function UserSignIn(e){
     password:password
   }
 console.log('form data=',user);
-const response=await axios.post('/login',user);
+await axios.post('/login',user).then(response=>{
 
 const status=response.data.status;
+console.log('response=',response);
+console.log('status=',status);
 if(status==1){
 
   alert('User Login Successful');
 }
 
-if(status==0){
-console.log('unauthorsed access');
-}
+}).catch(error=>{
+  if(error.response){
+    if(error.response.status===404 && error.response.data.status==2){
+      console.log('not found:',error.response.data.status);
+      alert('User Not found.Sign Up Now');
+    }
 
-if(status==3){
-console.log('user not found');
-}
-
+    if(error.response.status===401 && error.response.data.status===0){
+      console.log('unauthorised:',error.response.data.status);
+      alert('Incorrect password. Try again');
+    }
+  }
+})
 }
 
 </script>
