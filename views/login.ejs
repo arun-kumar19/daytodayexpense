@@ -74,11 +74,12 @@ console.log('form data=',user);
 await axios.post('/login',user).then(response=>{
 
 const status=response.data.status;
-console.log('response=',response);
+
+const userid=response.data.userdata.id
 console.log('status=',status);
 if(status==1){
-
-  alert('User Login Successful');
+  alert('login successful');
+  window.location.href=`/profile/${userid}`
 }
 
 }).catch(error=>{

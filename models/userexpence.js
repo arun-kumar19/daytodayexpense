@@ -3,27 +3,27 @@ const Sequelize=require('sequelize');
 //it creates a connection pool
 const sequelize=require('../util/database');
 
-const customerenroll=sequelize.define('customerenroll',{
+const userexpence=sequelize.define('userexpence',{
 id:{
   type:Sequelize.INTEGER,
   autoIncrement:true,
   allowNull:false,
   primaryKey:true
 },
-name:{
-type:Sequelize.STRING,
+money:{
+type:Sequelize.INTEGER,
 allowNull:false
 },
-email:{
+description:{
   type:Sequelize.STRING,
   allowNull:false
 },
-password:{
+category:{
   type:Sequelize.STRING,
   allowNull:false
 }
 
 });
-module.exports=customerenroll;
+module.exports=userexpence;
 
 

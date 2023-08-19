@@ -1,4 +1,5 @@
-const user=require('../models/signup');
+const user=require('../models/userdata');
+const userexpence=require('../models/userexpence');
 const Sequelize=require('sequelize');
 const bcrypt=require('bcrypt');
 
@@ -88,9 +89,9 @@ exports.getLogin=async(req,res,next)=>{
         }
         else{
         if(result){
-          console.log('hello=',result);
+         // console.log('hello=',result);
            username=checkuser.name;
-          res.status(201).json({'status':1})
+          res.status(201).json({'status':1,'userdata':checkuser})
         }
         else{
           res.status(401).json({'status':0})
@@ -98,6 +99,112 @@ exports.getLogin=async(req,res,next)=>{
       }
         })
   }
+
+
+
+exports.getUserExpence=async (req,res)=>{
+
+  const userid=req.params.id;
+
+  const fetchuser=await userexpence.findAll({where:{
+    userdatumId:userid
+  }});
+  console.log('result=',fetchuser);
+  if(!fetchuser){
+  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
+  }
+      res.status(201).json(fetchuser);
+}
+
+
+exports.getAddExpence=async (req,res)=>{
+  const{money,description,category,id}=req.body;
+
+  console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
+
+  const fetchuser=await user.findByPk(id);
+
+  const result=await fetchuser.createUserexpence({money,description,category});
+ //console.log('result=',result);
+  if(!result){
+  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
+  }
+      res.status(201).json(result);
+}
+
+exports.getProfile=async(req,res)=>{
+  const userid=req.params.userid;
+  const userdetails=await user.findByPk(userid);
+
+  //console.log('hello world=',user);
+  if(!userdetails){
+    return res.status(404).json({'status':2})
+  }
+  const userarr=[];
+  userarr.push(userdetails.id);
+  userarr.push(userdetails.name);
+  res.render('profile',{
+    path:'/profile',
+    userarrdata:userarr
+    });
+  //res.status(201).json({'message':'OK'});
+}
+
+
+exports.getUpdatedExpence=async (req,res)=>{
+  console.log('getUpdatedExpence');
+  const{money,description,category}=req.body;
+  const id=req.params.expenceid;
+
+  console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
+
+  const fetchuser=await userexpence.findByPk(id);
+
+  fetchuser.money=money;
+  fetchuser.description=description;
+  fetchuser.category=category;
+  await fetchuser.save();
+  const updatedrecord=await userexpence.findByPk(id);
+  //console.log('result=',updatedrecord);
+  if(!updatedrecord){
+  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
+  }
+      res.status(201).json(updatedrecord);
+}
+
+exports.getEditExpence=async (req,res)=>{
+  console.log('req=',req.params.expenceid);
+  const id=req.params.expenceid;
+
+  console.log('id-',id);
+
+  const fetchuser=await userexpence.findByPk(id);
+  //console.log('result=',fetchuser);
+  if(!fetchuser){
+  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
+  }
+      res.status(201).json(fetchuser);
+}
+
+exports.getDeleteExpence=async (req,res)=>{
+  const id=req.params.expenceid;
+
+  console.log('delete expence id-',id);
+
+  const fetchuser=await userexpence.findByPk(id);
+  const expenceadminid=fetchuser.userdatumId;
+  
+  if(!fetchuser){
+  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
+  }
+  //console.log('result=',fetchuser);
+    await fetchuser.destroy();
+    const updatedexpences=await userexpence.findAll({where :
+    {
+      userdatumId:expenceadminid
+    }})
+      res.status(201).json(updatedexpences);
+}
 
 
 /* 
@@ -111,7 +218,7 @@ exports.getLogin=async(req,res,next)=>{
   const checkemail=await user.findOne({where:{
     email:email
   }})
-console.log('result=',checkemail);
+//console.log('result=',checkemail);
 if(checkemail) {
   if(checkemail.password==password){
       passwordstatus=1;

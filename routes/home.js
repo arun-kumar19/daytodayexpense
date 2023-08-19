@@ -17,6 +17,12 @@ router.post('/signup', homeController.getUser);
 router.get('/signup', homeController.getSignUp);
 router.post('/login', homeController.getLogin);
 router.get('/login', homeController.getSuccess);
+router.get('/profile/:userid', homeController.getProfile);
+router.get('/profile/userexpences/:id', homeController.getUserExpence);
+router.post('/addexpence', homeController.getAddExpence);
+router.get('/editexpence/:expenceid', homeController.getEditExpence);
+router.delete('/deleteexpence/:expenceid', homeController.getDeleteExpence);
+router.put('/updateexpence/:expenceid', homeController.getUpdatedExpence);
 
 
 
