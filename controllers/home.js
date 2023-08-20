@@ -2,6 +2,9 @@ const user=require('../models/userdata');
 const userexpence=require('../models/userexpence');
 const Sequelize=require('sequelize');
 const bcrypt=require('bcrypt');
+const jwt=require('jsonwebtoken');
+const secretKey = '7539753909887979q78937008988080';
+
 
 exports.getSignUp=(req,res)=>{
   
@@ -66,10 +69,14 @@ exports.getSuccess=(req,res,next)=>{
 
 }
 
+function generateAccessToken(id){
+  const token=jwt.sign(id,secretKey);
+  console.log('token=',token);
+  return token;
+}
 
 exports.getLogin=async(req,res,next)=>{
   let username;
-  
   const {email,password}=req.body;
   //console.log('email1:',email,' and password1:',password);
   const checkuser=await user.findOne({where:{
@@ -91,7 +98,7 @@ exports.getLogin=async(req,res,next)=>{
         if(result){
          // console.log('hello=',result);
            username=checkuser.name;
-          res.status(201).json({'status':1,'userdata':checkuser})
+          res.status(201).json({'status':1,'userdata':checkuser,'token':generateAccessToken(checkuser.id)})
         }
         else{
           res.status(401).json({'status':0})
@@ -118,8 +125,10 @@ exports.getUserExpence=async (req,res)=>{
 
 
 exports.getAddExpence=async (req,res)=>{
-  const{money,description,category,id}=req.body;
-
+  const{money,description,category}=req.body;
+  const token=req.header('Authorization');
+  console.log('add expence token=',token);
+  const id=jwt.verify(token,secretKey);
   console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
 
   const fetchuser=await user.findByPk(id);
@@ -133,29 +142,17 @@ exports.getAddExpence=async (req,res)=>{
 }
 
 exports.getProfile=async(req,res)=>{
-  const userid=req.params.userid;
-  const userdetails=await user.findByPk(userid);
-
-  //console.log('hello world=',user);
-  if(!userdetails){
-    return res.status(404).json({'status':2})
-  }
-  const userarr=[];
-  userarr.push(userdetails.id);
-  userarr.push(userdetails.name);
   res.render('profile',{
     path:'/profile',
-    userarrdata:userarr
+  
     });
-  //res.status(201).json({'message':'OK'});
+  
 }
-
 
 exports.getUpdatedExpence=async (req,res)=>{
   console.log('getUpdatedExpence');
   const{money,description,category}=req.body;
-  const id=req.params.expenceid;
-
+    const id=req.params.expenceid;
   console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
 
   const fetchuser=await userexpence.findByPk(id);
@@ -176,7 +173,7 @@ exports.getEditExpence=async (req,res)=>{
   console.log('req=',req.params.expenceid);
   const id=req.params.expenceid;
 
-  console.log('id-',id);
+  //console.log('id-',id);
 
   const fetchuser=await userexpence.findByPk(id);
   //console.log('result=',fetchuser);
@@ -206,6 +203,22 @@ exports.getDeleteExpence=async (req,res)=>{
       res.status(201).json(updatedexpences);
 }
 
+exports.getSingleUserExpences=async (req,res)=>{
+  const token=req.header('Authorization');
+  console.log('user token id-',token);
+  
+  const id=jwt.verify(token,secretKey);
+
+  const fetchuser=await userexpence.findAll({where:{
+    userdatumId:id
+  }});
+  
+  if(!fetchuser){
+  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
+  }
+  //console.log('result=',fetchuser);
+      res.status(201).json(fetchuser);
+}
 
 /* 
 exports.getLogin=async(req,res,next)=>{

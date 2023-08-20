@@ -12,7 +12,9 @@
 <div class="container mt-2 bg-light">
 <div class="row">
   <div class="col-sm">
-  <p>Welcome <%= userarrdata[1] %></p>
+<!-- 
+  
+-->
   </div>
  <div class="col-sm border border-primary">
  
@@ -37,7 +39,7 @@
             </select>
             
     </div>
-    <input type="hidden" id='userid' value="<%= userarrdata[0] %>">
+  <input type="hidden" id="expenceid">    
     <button type="submit" class="btn btn-primary" id="submit" onclick="addexpence()">Add Expence</button>
     <ul id="expencelist"></ul>
  
@@ -58,8 +60,9 @@
 async function fetchexpences(){
 
     try{
-          const id=document.getElementById('userid').value
-          const response=await axios.get(`userexpences/${id}`);
+      const token=localStorage.getItem('token');
+        //  const id=document.getElementById('userid').value
+          const response=await axios.get('userexpences',{headers:{'Authorization':token}});
         const user=response.data;
        console.log('loaded content=',user.length); 
 
@@ -93,7 +96,7 @@ async function fetchexpences(){
 async function editItem(event){
 
 const id=event.target.id;
-console.log('edit item id=',id);
+//console.log('edit item id=',id);
 console.log('edit product fun2 called and id is=',event.target.id);
     
 try{
@@ -109,9 +112,10 @@ const userList = document.getElementById('expencelist');
 document.getElementById('money').value=user.money;
 document.getElementById('description').value=user.description;
 document.getElementById('category').value=user.category;
-document.getElementById('userid').value=user.id;
+//document.getElementById('userid').value=user.id;
 document.getElementById('submit').innerHTML='Update Product';
 document.getElementById('submit').onclick=UpdateProduct;
+document.getElementById('expenceid').value=user.id;
 const li=event.target.parentElement;
 console.log('li=',li);
 userList.removeChild(li);      
@@ -123,7 +127,7 @@ catch(error){
 } //edit function closed
 
 async function deleteItem(event){
-console.log('product deleted  fun2 successfully');
+console.log('product deleted  fun1 successfully');
 //  alert(event.target.id)
 const id=event.target.id;
 console.log('value of id=',id);
@@ -152,10 +156,11 @@ console.log('something went wrong');
 
 } //delete function closed
 
-async function UpdateProduct(){
+async function UpdateProduct(event){
 
-console.log('update product2 function called');
-const id=document.getElementById('userid').value;
+console.log('update product1 function called');
+const id=document.getElementById('expenceid').value;
+console.log('update expence id=',id);
 const money=document.getElementById('money').value;
 const description=document.getElementById('description').value;
 const category=document.getElementById('category').value;
@@ -165,7 +170,6 @@ const jsonData = {
 money: money,
 description: description,
 category: category,
-
 };
 
 console.log('JSON=',jsonData);
@@ -180,12 +184,12 @@ const response=await axios.put(`/updateexpence/${id}`,jsonData);
           const listItem = document.createElement('li');
             const editButton=document.createElement('button');
             editButton.value='Edit';
-            editButton.id=user.id;
+            //editButton.id=user.id;
             editButton.textContent='Edit';
             editButton.onclick=editItem;
             const deleteButton=document.createElement('button');
             deleteButton.value='delete';
-            deleteButton.id=user.id;
+            //deleteButton.id=user.id;
             deleteButton.onclick=deleteItem;
             deleteButton.textContent='Delete';
 
@@ -230,7 +234,8 @@ async function addexpence(){
   const money=document.getElementById('money').value;
   const description=document.getElementById('description').value;
   const category=document.getElementById('category').value;
-  const userid=document.getElementById('userid').value;
+ // const userid=document.getElementById('userid').value;
+ const token=localStorage.getItem('token');
   const ul=document.getElementById('expencelist');
 console.log('Moeny=',money, 'description=',description, 'category=',category);
   if(money && description && category){
@@ -238,10 +243,9 @@ console.log('Moeny=',money, 'description=',description, 'category=',category);
     money:money,
     description:description,
     category:category,
-    id:userid
   }
 console.log('form data=',expencedata);
-const response=await axios.post('/addexpence',expencedata);
+const response=await axios.post('/addexpence',expencedata,{headers:{'Authorization':token}},);
 console.log('response data=',response);
 if(response){
   alert('expence created successfully');
@@ -250,7 +254,7 @@ if(response){
   document.getElementById('description').value='';
   document.getElementById('category').value='';
     const buttonText=document.getElementById('btn');
-          console.log('id=',user.id);
+          //console.log('id=',user.id);
         const userList = document.getElementById('expencelist');
 
         // Render each user as a list item
@@ -304,7 +308,7 @@ const userList = document.getElementById('expencelist');
 document.getElementById('money').value=user.money;
 document.getElementById('description').value=user.description;
 document.getElementById('category').value=user.category;
-document.getElementById('userid').value=user.id;
+document.getElementById('expenceid').value=user.id;
 document.getElementById('submit').innerHTML='Update Product';
 document.getElementById('submit').onclick=UpdateProduct;
 const li=event.target.parentElement;
@@ -320,16 +324,16 @@ catch(error){
 async function deleteItem(event){
 console.log('product deleted  fun2 successfully');
 //  alert(event.target.id)
-const id=event.target.id;
+const id=document.getElementById('expenceid').value;
 console.log('value of id=',id);
-console.log(`Button ${id} was clicked.`);
+//console.log(`Button ${id} was clicked.`);
 try{
-const response=axios.delete(`/deleteproduct/${id}`)
-//alert('product deleted successfully');
+const response=await axios.delete(`/deleteexpence/${id}`)
+console.log('delete response=',response);
 
 if(response){
   console.log('User Deleted :',response.data)
-userList = document.getElementById('expencelist');
+const userList = document.getElementById('expencelist');
 const li=event.target.parentElement;
 console.log(li);
 
@@ -347,10 +351,11 @@ console.log('something went wrong');
 
 } //delete function closed
 
-async function UpdateProduct(){
+async function UpdateProduct(event){
 
 console.log('update product2 function called');
-const id=document.getElementById('userid').value;
+const id=document.getElementById('expenceid').value;
+console.log('update expence id=',id);
 const money=document.getElementById('money').value;
 const description=document.getElementById('description').value;
 const category=document.getElementById('category').value;
@@ -360,7 +365,6 @@ const jsonData = {
 money: money,
 description: description,
 category: category,
-
 };
 
 console.log('JSON=',jsonData);
@@ -383,7 +387,7 @@ const response=await axios.put(`/updateexpence/${id}`,jsonData);
             deleteButton.id=user.id;
             deleteButton.onclick=deleteItem;
             deleteButton.textContent='Delete';
-
+          document.getElementById('expenceid').value=user.id
            const value= `${user.money} ${user.description} ${user.category} `;
            listItem.textContent=value;
            listItem.appendChild(editButton);
@@ -403,6 +407,7 @@ alert('product updated successfully');
 }
 
 }
+
 }
 </script>
 

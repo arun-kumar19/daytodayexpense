@@ -76,10 +76,13 @@ await axios.post('/login',user).then(response=>{
 const status=response.data.status;
 
 const userid=response.data.userdata.id
+const token=response.data.token;
+  //console.log('abcd=',response.data);
+localStorage.setItem('token',token);
 console.log('status=',status);
 if(status==1){
   alert('login successful');
-  window.location.href=`/profile/${userid}`
+ window.location.href='/profile'
 }
 
 }).catch(error=>{
