@@ -1,9 +1,15 @@
 const user=require('../models/userdata');
+const order=require('../models/orders');
 const userexpence=require('../models/userexpence');
 const Sequelize=require('sequelize');
 const bcrypt=require('bcrypt');
 const jwt=require('jsonwebtoken');
+const Razorpay=require('razorpay');
 const secretKey = '7539753909887979q78937008988080';
+const razorpay=new Razorpay({
+  key_id:'rzp_test_NPB8btb7Mfqb03',
+  key_secret:'UNVX2eym2FcksUvH6FzwBCtc'
+});
 
 
 exports.getSignUp=(req,res)=>{
@@ -220,61 +226,106 @@ exports.getSingleUserExpences=async (req,res)=>{
       res.status(201).json(fetchuser);
 }
 
-/* 
-exports.getLogin=async(req,res,next)=>{
-  let username;
-  let passwordstatus;
-  const {email,password}=req.body;
+exports.getPremiumPayment=async (req,res)=>{
+try{
+  const token=req.header('Authorization');
+  console.log('add expence token=',token);
+  const id=jwt.verify(token,secretKey);
+  console.log('user id-',id);
 
-  console.log('email:',email,' and password:',password);
+  const fetchuser=await user.findByPk(id);
 
-  const checkemail=await user.findOne({where:{
-    email:email
-  }})
-//console.log('result=',checkemail);
-if(checkemail) {
-  if(checkemail.password==password){
-      passwordstatus=1;
-  }
-  else{
-    passwordstatus=2;
-  }
+  const orderAmount = 1500; // Amount in paisa (1000 paisa = ₹10)
+const currency = 'INR';
 
-  if(checkemail.length==0){
-    console.log('seems this condition never gets true');
-   return  res.render('login',{
-      status:0,
-      path:'/'
+const orderOptions = {
+  amount: orderAmount,
+  currency: currency,
+};
+
+  try{
+  razorpay.orders.create(orderOptions, (err, order) => {
+    if (err) {
+      console.error('Error creating order:', err);
+      throw new Error(JSON.stringify(err));
+    }
+    console.log('Order:', order);
+    try{
+    fetchuser.createOrder({orderid:order.id,amount:order.amount,currency:order.currency,status:'pending',payment_id:'na'}).
+      then(orderstatus=>{
+    if(!orderstatus){
+      console.log('something went wrong=',orderstatus);
+    }
+     console.log('order status:',orderstatus);
+     return res.status(201).json({order,key_id:razorpay.key_id});
+    }).catch(err=>{
+      console.log('something went wrong11=',err);
     });
-    } 
-    if(checkemail && passwordstatus==1){/* 
-    console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
-  username=checkemail.name;
-  res.render('profile',{
-    name:username,
-    path:'/profile'
-  }) 
-
-  res.json({'status':1})//password matched
-}
-
-if(checkemail && passwordstatus==2){
-  /* console.log('checkuser=',checkemail.name,' userlength=',checkemail.length);
-  return  res.render('login',{
-    status:2,
-    path:'/'
-  }); 
-
-  res.status(401).json({'status':0})//password not matched
+    
+  }
+    catch(error){
+      console.log('error2-',error);
+    }
+  });
+  }catch(error){
+    console.log('error3=',error);
+  }
+}catch(error){
+  console.log('error4-',error);
+  res.status(403).json({message:'something went wrong',error:error});
 }
 
 }
 
-else{
-
-  res.status(404).json({'status':3})//user not found
+exports.getUpdateTransactionStatus=async(req,res)=>{
+  console.log('received request from server');
+  const token=req.header('Authorization');
+  console.log('token=',token);
+  console.log('request=',req);
+  const {order_id,payment_id,order_status}=req.body;
+  const id=jwt.verify(token,secretKey); 
+  console.log('transaction order status=',order_status);
+  try{
+  const userorder=await order.findOne({where:{
+    orderid:order_id
+  }})
   
+  if(order_status===0){
+    console.log('transaction failed');
+    userorder.status='failed';  
+    await userorder.save();
+    return res.json({'MESSAGE':'failed'});
+  }
+  console.log('transaction success');
+  const getuser=await user.findByPk(id);
+  getuser.ispremiumuser=true;
+  await getuser.save();
+  console.log('fetched order=',userorder);
+  userorder.status='COMPLETED'
+  userorder.payment_id=payment_id
+  await userorder.save();
+  res.status(201).json({'MESSAGE':'OK'});
+}catch(error){
+  console.log('error during updating record=',error);
+}
 }
 
-} 
-*/
+exports.getUserStatus=async (req,res)=>{
+  const token=req.header('Authorization');
+  console.log('add expence token=',token);
+  const id=jwt.verify(token,secretKey); 
+  try{
+  const userstatus=await user.findByPk(id);
+
+  console.log('checkuser=',userstatus,' userlength=',userstatus.length);
+  if(!userstatus){
+  return res.status(404).json({'status':0})//user exists
+  }
+
+    res.status(201).json(userstatus.ispremiumuser);//user created
+  }catch(err){
+    console.log('soemthing went wrong =',err);
+  }
+}
+
+

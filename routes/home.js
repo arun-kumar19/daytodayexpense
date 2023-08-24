@@ -24,7 +24,7 @@ router.post('/addexpence', homeController.getAddExpence);
 router.get('/editexpence/:expenceid', homeController.getEditExpence);
 router.delete('/deleteexpence/:expenceid', homeController.getDeleteExpence);
 router.put('/updateexpence/:expenceid', homeController.getUpdatedExpence);
-
-
-
+router.get('/buypremium', homeController.getPremiumPayment);
+router.post('/updatetransactionstatus', homeController.getUpdateTransactionStatus);
+router.get('/userstatus', homeController.getUserStatus);
 module.exports=router;

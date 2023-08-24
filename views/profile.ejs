@@ -12,9 +12,7 @@
 <div class="container mt-2 bg-light">
 <div class="row">
   <div class="col-sm">
-<!-- 
-  
--->
+<button type="submit" id="buypremium" class="btn btn-success" onclick="buypremium()">Buy Premium</button>
   </div>
  <div class="col-sm border border-primary">
  
@@ -54,7 +52,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 
 async function fetchexpences(){
@@ -63,7 +61,13 @@ async function fetchexpences(){
       const token=localStorage.getItem('token');
         //  const id=document.getElementById('userid').value
           const response=await axios.get('userexpences',{headers:{'Authorization':token}});
+          const userstatus=await axios.get('userstatus',{headers:{'Authorization':token}});
         const user=response.data;
+      console.log('user status=',userstatus.data);
+        if(userstatus.data){
+      
+          document.getElementById('buypremium').textContent='Premium';
+        }
        console.log('loaded content=',user.length); 
 
        const userList = document.getElementById('expencelist');
@@ -407,8 +411,74 @@ alert('product updated successfully');
 }
 
 }
-
 }
+
+async function buypremium(e){
+  const ispremium=document.getElementById('buypremium').textContent;
+  console.log('data=',ispremium);
+  if(ispremium==='Premium'){
+    confirm('You are premium user');
+  }
+  else{
+  //e.preventDefault();
+  const token=localStorage.getItem('token');
+  const response=await axios.get('buypremium',{headers:{'Authorization':token}});
+  console.log('RESONSE=',response);
+  console.log('key_id=',response.data.key_id);
+  console.log('order id=',response.data.order.id);
+  var options = {
+    "key": response.data.key_id, // Enter the Key ID generated from the Dashboard
+    "name": "ABC CORP",
+    "description": "Test Transaction",
+    "image": "https://www.letstrack.com/img/logo.png",
+    "order_id": response.data.order.id, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+    "handler":async function (response){
+      alert('Transaction Successfull');
+        alert(response.razorpay_payment_id);
+        alert(response.razorpay_order_id);
+        alert(response.razorpay_signature);
+       const updateresponse= await axios.post('http://127.0.0.1:5000/updatetransactionstatus',{
+          order_id:options.order_id,
+          payment_id:response.razorpay_payment_id,
+          order_status:1
+        },{headers:{"Authorization":token}})
+        
+        console.log('STATUS=',updateresponse.data.MESSAGE);
+        alert('your a premium user now');
+        location.reload();        
+
+    },
+};
+var rzp1 = new Razorpay(options);
+rzp1.on('payment.failed', async (response)=>{
+        console.log('failed response=',response);
+        try{
+        const updateresponse= await axios.post('http://127.0.0.1:5000/updatetransactionstatus',{
+          order_id:options.order_id,
+          payment_id:0,
+          order_status:0
+        },{headers:{"Authorization":token}})
+        console.log('failed order response=',updateresponse.data.MESSAGE);
+        alert('TRANSACTION FAILED');
+        alert(response.error.code);
+        alert(response.error.description);
+        alert(response.error.source);
+        alert(response.error.step);
+        alert(response.error.reason);
+        alert(response.error.metadata.order_id);
+        alert(response.error.metadata.payment_id);
+        location.reload();
+      }catch(error){
+        console.log('error=',error);
+      }
+      });
+
+ console.log('razorpay fun is called');
+    rzp1.open();
+    
+  }
+}
+
 </script>
 
 </body>

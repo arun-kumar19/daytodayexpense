@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const sequelize=require('./util/database');
 const user=require('./models/userdata');
 const userexpence=require('./models/userexpence');
+const order=require('./models/orders');
 const app=express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -16,6 +17,8 @@ const homeRoute = require('./routes/home');
 
 user.hasMany(userexpence);
 userexpence.belongsTo(user);
+user.hasMany(order);
+order.belongsTo(user);
 
 app.use(homeRoute);
 
