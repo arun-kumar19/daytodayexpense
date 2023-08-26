@@ -27,4 +27,5 @@ router.put('/updateexpence/:expenceid', homeController.getUpdatedExpence);
 router.get('/buypremium', homeController.getPremiumPayment);
 router.post('/updatetransactionstatus', homeController.getUpdateTransactionStatus);
 router.get('/userstatus', homeController.getUserStatus);
+router.get('/leaderboard', homeController.getLeaderBoard);
 module.exports=router;

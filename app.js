@@ -24,7 +24,7 @@ app.use(homeRoute);
 
 sequelize.sync().then(()=>{
     console.log('Server Running........');
-    app.listen(5000);
+    app.listen(3000);
 }).catch(error=>{
     console.log('error while synchnorising with database=',error);
 })

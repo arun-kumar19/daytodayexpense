@@ -132,7 +132,9 @@ exports.getUserExpence=async (req,res)=>{
 
 exports.getAddExpence=async (req,res)=>{
   const{money,description,category}=req.body;
-  const token=req.header('Authorization');
+  const tokendata=JSON.parse(req.header('Authorization'));
+  console.log('tokendata=',tokendata);
+  const token=tokendata.tokenid;
   console.log('add expence token=',token);
   const id=jwt.verify(token,secretKey);
   console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
@@ -317,15 +319,42 @@ exports.getUserStatus=async (req,res)=>{
   try{
   const userstatus=await user.findByPk(id);
 
-  console.log('checkuser=',userstatus,' userlength=',userstatus.length);
+  //console.log('checkuser=',userstatus,' userlength=',userstatus.length);
   if(!userstatus){
   return res.status(404).json({'status':0})//user exists
   }
 
-    res.status(201).json(userstatus.ispremiumuser);//user created
+    res.status(201).json(userstatus);//user created
   }catch(err){
     console.log('soemthing went wrong =',err);
   }
 }
 
+exports.getLeaderBoard=async (req,res)=>{
+  
+  try{
+    const groupbyuser = await userexpence.findAll({
+      attributes: ['userdatumId', [Sequelize.fn('sum', Sequelize.col('money')), 'total_cost']],
+    include: [
+    {
+        model: user,
+        attributes: ['name']
+    }
+    ],
+    order:[
+      ['total_cost','DESC']
+    ],
+    group: ['userdatumId']
+    })
+
+  console.log('checkuser=',groupbyuser,' userlength=',groupbyuser.length);
+  if(!groupbyuser){
+  return res.status(404).json({'status':0})//user exists
+  }
+
+    res.status(201).json(groupbyuser);//user created
+  }catch(err){
+    console.log('soemthing went wrong =',err);
+  }
+}
 

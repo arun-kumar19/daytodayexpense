@@ -11,7 +11,7 @@
 
 <div class="container mt-2 bg-light">
 <div class="row">
-  <div class="col-sm">
+  <div class="col-sm" id="first">
 <button type="submit" id="buypremium" class="btn btn-success" onclick="buypremium()">Buy Premium</button>
   </div>
  <div class="col-sm border border-primary">
@@ -39,12 +39,19 @@
     </div>
   <input type="hidden" id="expenceid">    
     <button type="submit" class="btn btn-primary" id="submit" onclick="addexpence()">Add Expence</button>
+    <h3 id="userexpences"></h3>
     <ul id="expencelist"></ul>
  
 </div>
 <div class="col-sm">
-
+<p class="ml-5" id="username"></p>
 </div>
+</div>
+<div class="row">
+  <div class="col-sm" id="secondrow">
+    <h1 id="leaderboardheading"></h1>
+    <ul id="leaderboarddata"></ul>    
+  </div>
 </div>
 
 <!-- Include Bootstrap JS and jQuery -->
@@ -58,23 +65,39 @@
 async function fetchexpences(){
 
     try{
-      const token=localStorage.getItem('token');
+      const tokendata=localStorage.getItem('token');
+        const abc=JSON.parse(tokendata)
+      const token=abc.tokenid;
+      const ispremiumuser=abc.ispremium;
+//      console.log('token-',token,' ispremiumuser-',ispremiumuser);
         //  const id=document.getElementById('userid').value
           const response=await axios.get('userexpences',{headers:{'Authorization':token}});
           const userstatus=await axios.get('userstatus',{headers:{'Authorization':token}});
-        const user=response.data;
+          const user=response.data;
+        //const user=userstatus.data;
+        const username=userstatus.data.name;
+        //console.log('userstatus=',user, 'username=',username);
+        const formatString=`Welcome ${username}!`;
+        document.getElementById('username').innerText=formatString
       console.log('user status=',userstatus.data);
-        if(userstatus.data){
-      
-          document.getElementById('buypremium').textContent='Premium';
+        if(ispremiumuser){
+            const multipleclass='btn btn-success'
+          document.getElementById('buypremium').textContent='You are a premium user';
+          const div=document.getElementById("first");
+          const button=document.createElement("button");
+          button.className=multipleclass;
+          button.onclick=showleaderboard;
+          button.type="submit"
+          button.textContent="Leader Board";
+          div.appendChild(button);
         }
-       console.log('loaded content=',user.length); 
+   //    console.log('loaded content=',user.length); 
 
        const userList = document.getElementById('expencelist');
 
         // Render each user as a list item
           for(let i=0;i<user.length;i++){
-
+            document.getElementById("userexpences").textContent="Expenses"
           const listItem = document.createElement('li');
             const editButton=document.createElement('button');
             editButton.value='Edit';
@@ -222,9 +245,35 @@ alert('product updated successfully');
 
 }
 
+async function showleaderboard(){
+  try{
+      document.getElementById("leaderboarddata").innerHTML="";
+        document.getElementById('leaderboardheading').textContent='Leader Board'
+        const response=await axios.get('leaderboard');
+      const userdata=response.data;
+      const length=response.data.length;
+      const ul=document.getElementById("leaderboarddata");
+      for(let i=0;i<length;i++){
+        const username=userdata[i].userdatum.name;
+        const total_cost=userdata[i].total_cost;
+        const dataformat=`Name-${username} Total Expenses-${total_cost}`
+        console.log(dataformat);
+        const li=document.createElement('li');
+        li.textContent=dataformat;
+        ul.appendChild(li);
+        
+      }
+
+
+  }catch(error){
+    console.log('something went wrong in showleaderboard=',error);
+  }
+}
+
     }catch(error){
       console.log('error while loading content from server',error);
     }
+
 }
 
 
@@ -415,13 +464,16 @@ alert('product updated successfully');
 
 async function buypremium(e){
   const ispremium=document.getElementById('buypremium').textContent;
-  console.log('data=',ispremium);
-  if(ispremium==='Premium'){
+  const tokendata=localStorage.getItem('token');
+  const abc=JSON.parse(tokendata);
+  const token=abc.tokenid;
+  const userstatus=abc.ispremium;
+  console.log('userstatus=',userstatus);
+  if(userstatus){
     confirm('You are premium user');
   }
   else{
   //e.preventDefault();
-  const token=localStorage.getItem('token');
   const response=await axios.get('buypremium',{headers:{'Authorization':token}});
   console.log('RESONSE=',response);
   console.log('key_id=',response.data.key_id);
@@ -444,7 +496,8 @@ async function buypremium(e){
         },{headers:{"Authorization":token}})
         
         console.log('STATUS=',updateresponse.data.MESSAGE);
-        alert('your a premium user now');
+
+        alert('you are a premium user now');
         location.reload();        
 
     },
@@ -459,6 +512,12 @@ rzp1.on('payment.failed', async (response)=>{
           order_status:0
         },{headers:{"Authorization":token}})
         console.log('failed order response=',updateresponse.data.MESSAGE);
+        const tokendata=localStorage.getItem('token');
+        const data={
+          tokenid:tokendata.tokenid,
+          ispremium:1
+        }
+        localStorage.setItem('token',data);
         alert('TRANSACTION FAILED');
         alert(response.error.code);
         alert(response.error.description);
@@ -478,6 +537,8 @@ rzp1.on('payment.failed', async (response)=>{
     
   }
 }
+
+
 
 </script>
 
