@@ -44,7 +44,7 @@ exports.getUser=async (req,res)=>{
     email:email
   }})
 
-  console.log('checkuser=',checkUser,' userlength=',checkUser.length);
+ // console.log('checkuser=',checkUser,' userlength=',checkUser.length);
   if(checkUser.length>0){
 
   return res.json({'status':0})//user exists
@@ -132,21 +132,42 @@ exports.getUserExpence=async (req,res)=>{
 
 exports.getAddExpence=async (req,res)=>{
   const{money,description,category}=req.body;
-  const tokendata=JSON.parse(req.header('Authorization'));
-  console.log('tokendata=',tokendata);
-  const token=tokendata.tokenid;
+  const token=req.header('Authorization');
+  //const tokendata=JSON.parse(data);
+  console.log('tokendata=',token);
+  //const token=tokendata.tokenid;
   console.log('add expence token=',token);
   const id=jwt.verify(token,secretKey);
   console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
-
+  try{
   const fetchuser=await user.findByPk(id);
+  let current_expences;
+  if(!fetchuser.total_expenses){
+    current_expences=0;
+  }
+else{
+  current_expences=fetchuser.total_expenses;
+}
+  if(money>=0){
+    fetchuser.total_expenses=Number(current_expences)+Number(money);
+    await fetchuser.save();
+  }
+  else{
+    fetchuser.total_expenses=Number(fetchuser.total_expenses)-Number(money);
+    await fetchuser.save();
+  }
 
   const result=await fetchuser.createUserexpence({money,description,category});
+  
  //console.log('result=',result);
   if(!result){
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
   }
       res.status(201).json(result);
+}
+catch(error){
+  console.log('something went wrong 13=',error);
+}
 }
 
 exports.getProfile=async(req,res)=>{
@@ -160,11 +181,19 @@ exports.getProfile=async(req,res)=>{
 exports.getUpdatedExpence=async (req,res)=>{
   console.log('getUpdatedExpence');
   const{money,description,category}=req.body;
+  const token=req.header('Authorization');
+  console.log('user token id-',token);
+  const tokenid=jwt.verify(token,secretKey);
     const id=req.params.expenceid;
   console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
-
+try{
   const fetchuser=await userexpence.findByPk(id);
+  const getUser=await user.findByPk(tokenid)
+ 
+  getUser.total_expenses=Number(getUser.total_expenses)-Number(fetchuser.money)+Number(money)
+    await getUser.save();
 
+  
   fetchuser.money=money;
   fetchuser.description=description;
   fetchuser.category=category;
@@ -175,6 +204,10 @@ exports.getUpdatedExpence=async (req,res)=>{
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
   }
       res.status(201).json(updatedrecord);
+}
+  catch(error){
+    console.log('error while updateing expense=',error);
+  }
 }
 
 exports.getEditExpence=async (req,res)=>{
@@ -193,22 +226,31 @@ exports.getEditExpence=async (req,res)=>{
 
 exports.getDeleteExpence=async (req,res)=>{
   const id=req.params.expenceid;
+  const token=req.header('Authorization');
+  const userid=jwt.verify(token,secretKey);
 
   console.log('delete expence id-',id);
-
+  try{
   const fetchuser=await userexpence.findByPk(id);
-  const expenceadminid=fetchuser.userdatumId;
-  
+
   if(!fetchuser){
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
   }
   //console.log('result=',fetchuser);
+  const getUser=await user.findByPk(userid);
+  getUser.total_expenses=Number(getUser.total_expenses)-Number(fetchuser.money);
+  await getUser.save()
+  const expenceadminid=fetchuser.userdatumId
     await fetchuser.destroy();
     const updatedexpences=await userexpence.findAll({where :
     {
       userdatumId:expenceadminid
     }})
       res.status(201).json(updatedexpences);
+  }
+  catch(error){
+    console.log('error while deleting expences=',error);
+  }
 }
 
 exports.getSingleUserExpences=async (req,res)=>{
@@ -314,10 +356,11 @@ exports.getUpdateTransactionStatus=async(req,res)=>{
 
 exports.getUserStatus=async (req,res)=>{
   const token=req.header('Authorization');
-  console.log('add expence token=',token);
+  //console.log('add expence token=',token);
   const id=jwt.verify(token,secretKey); 
   try{
   const userstatus=await user.findByPk(id);
+  //console.log('userstatus=',userstatus);
 
   //console.log('checkuser=',userstatus,' userlength=',userstatus.length);
   if(!userstatus){
@@ -333,20 +376,13 @@ exports.getUserStatus=async (req,res)=>{
 exports.getLeaderBoard=async (req,res)=>{
   
   try{
-    const groupbyuser = await userexpence.findAll({
-      attributes: ['userdatumId', [Sequelize.fn('sum', Sequelize.col('money')), 'total_cost']],
-    include: [
-    {
-        model: user,
-        attributes: ['name']
-    }
+    const groupbyuser = await user.findAll({
+      order: [
+        ['total_expenses', 'DESC'],
     ],
-    order:[
-      ['total_cost','DESC']
-    ],
-    group: ['userdatumId']
-    })
+      attributes: ['name','total_expenses'],
 
+    })
   console.log('checkuser=',groupbyuser,' userlength=',groupbyuser.length);
   if(!groupbyuser){
   return res.status(404).json({'status':0})//user exists

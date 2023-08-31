@@ -68,18 +68,22 @@ async function fetchexpences(){
       const tokendata=localStorage.getItem('token');
         const abc=JSON.parse(tokendata)
       const token=abc.tokenid;
-      const ispremiumuser=abc.ispremium;
-//      console.log('token-',token,' ispremiumuser-',ispremiumuser);
+      const ispremiumuser=abc.ispremiumuser;
+      console.log('token-',token,' ispremiumuser-',ispremiumuser);
         //  const id=document.getElementById('userid').value
           const response=await axios.get('userexpences',{headers:{'Authorization':token}});
-          const userstatus=await axios.get('userstatus',{headers:{'Authorization':token}});
           const user=response.data;
-        //const user=userstatus.data;
+          const userstatus=await axios.get('userstatus',{headers:{'Authorization':token}});
+          console.log('userstatus=',userstatus)
+          if(userstatus){
         const username=userstatus.data.name;
-        //console.log('userstatus=',user, 'username=',username);
+        console.log('userstatus=',user, 'username=',username);
         const formatString=`Welcome ${username}!`;
         document.getElementById('username').innerText=formatString
-      console.log('user status=',userstatus.data);
+       // console.log('user status=',userstatus.data);
+
+          }
+        
         if(ispremiumuser){
             const multipleclass='btn btn-success'
           document.getElementById('buypremium').textContent='You are a premium user';
@@ -160,7 +164,7 @@ const id=event.target.id;
 console.log('value of id=',id);
 console.log(`Button ${id} was clicked.`);
 try{
-const response=await axios.delete(`/deleteexpence/${id}`)
+const response=await axios.delete(`/deleteexpence/${id}`,{headers:{'Authorization':token}})
 console.log('delete response=',response);
 
 if(response){
@@ -192,6 +196,10 @@ const money=document.getElementById('money').value;
 const description=document.getElementById('description').value;
 const category=document.getElementById('category').value;
 const buttonSubmit=document.getElementById('submit');
+const tokendata=localStorage.getItem('token');
+        const abc=JSON.parse(tokendata)
+      const token=abc.tokenid;
+      const ispremiumuser=abc.ispremium;
 
 const jsonData = {
 money: money,
@@ -201,7 +209,7 @@ category: category,
 
 console.log('JSON=',jsonData);
 try{
-const response=await axios.put(`/updateexpence/${id}`,jsonData);
+const response=await axios.put(`/updateexpence/${id}`,jsonData,{headers:{'Authorization':token}});
   const user=response.data;
   console.log('User Updated :',user);
 
@@ -254,8 +262,8 @@ async function showleaderboard(){
       const length=response.data.length;
       const ul=document.getElementById("leaderboarddata");
       for(let i=0;i<length;i++){
-        const username=userdata[i].userdatum.name;
-        const total_cost=userdata[i].total_cost;
+        const username=userdata[i].name;
+        const total_cost=userdata[i].total_expenses;
         const dataformat=`Name-${username} Total Expenses-${total_cost}`
         console.log(dataformat);
         const li=document.createElement('li');
@@ -283,12 +291,13 @@ document.addEventListener("DOMContentLoaded",fetchexpences);
 async function addexpence(){
   console.log('addexpence function called');
   try {
-  //alert('abcd');  
   const money=document.getElementById('money').value;
   const description=document.getElementById('description').value;
   const category=document.getElementById('category').value;
- // const userid=document.getElementById('userid').value;
- const token=localStorage.getItem('token');
+  const tokendata=localStorage.getItem('token');
+  const abc=JSON.parse(tokendata);
+  const token=abc.tokenid;
+  const userstatus=abc.ispremium;
   const ul=document.getElementById('expencelist');
 console.log('Moeny=',money, 'description=',description, 'category=',category);
   if(money && description && category){
@@ -345,7 +354,7 @@ else{
 async function editItem(event){
 
 const id=event.target.id;
-console.log('edit item id=',id);
+//console.log('edit item id=',id);
 console.log('edit product fun2 called and id is=',event.target.id);
     
 try{
@@ -361,9 +370,10 @@ const userList = document.getElementById('expencelist');
 document.getElementById('money').value=user.money;
 document.getElementById('description').value=user.description;
 document.getElementById('category').value=user.category;
-document.getElementById('expenceid').value=user.id;
+//document.getElementById('userid').value=user.id;
 document.getElementById('submit').innerHTML='Update Product';
 document.getElementById('submit').onclick=UpdateProduct;
+document.getElementById('expenceid').value=user.id;
 const li=event.target.parentElement;
 console.log('li=',li);
 userList.removeChild(li);      
@@ -372,16 +382,17 @@ catch(error){
     console.log('getting error while fetching data from server =',error);
 
 }
-} //edit function closed
-
+}
 async function deleteItem(event){
-console.log('product deleted  fun2 successfully');
-//  alert(event.target.id)
-const id=document.getElementById('expenceid').value;
+console.log('product deleted  fun1 successfully');
+const tokendata=localStorage.getItem('token');
+const parsedToken=JSON.parse(tokendata);
+const token=parsedToken.tokenid;
+const id=event.target.id;
 console.log('value of id=',id);
-//console.log(`Button ${id} was clicked.`);
+console.log(`Button ${id} was clicked.`);
 try{
-const response=await axios.delete(`/deleteexpence/${id}`)
+const response=await axios.delete(`/deleteexpence/${id}`,{headers:{'Authorization':token}})
 console.log('delete response=',response);
 
 if(response){
@@ -413,6 +424,9 @@ const money=document.getElementById('money').value;
 const description=document.getElementById('description').value;
 const category=document.getElementById('category').value;
 const buttonSubmit=document.getElementById('submit');
+const tokendata=localStorage.getItem('token');
+const abc=JSON.parse(tokendata);
+const token=abc.tokenid;
 
 const jsonData = {
 money: money,
@@ -422,7 +436,7 @@ category: category,
 
 console.log('JSON=',jsonData);
 try{
-const response=await axios.put(`/updateexpence/${id}`,jsonData);
+const response=await axios.put(`/updateexpence/${id}`,jsonData,{headers:{'Authorization':token}});
   const user=response.data;
   console.log('User Updated :',user);
 
@@ -468,7 +482,7 @@ async function buypremium(e){
   const abc=JSON.parse(tokendata);
   const token=abc.tokenid;
   const userstatus=abc.ispremium;
-  console.log('userstatus=',userstatus);
+  console.log('userstatus=',userstatus, 'token=',token);
   if(userstatus){
     confirm('You are premium user');
   }
@@ -489,24 +503,38 @@ async function buypremium(e){
         alert(response.razorpay_payment_id);
         alert(response.razorpay_order_id);
         alert(response.razorpay_signature);
-       const updateresponse= await axios.post('http://127.0.0.1:5000/updatetransactionstatus',{
+        try{
+       const updateresponse= await axios.post('http://127.0.0.1:3000/updatetransactionstatus',{
           order_id:options.order_id,
           payment_id:response.razorpay_payment_id,
           order_status:1
         },{headers:{"Authorization":token}})
-        
+        const tokendatalocal=localStorage.getItem('token');
+        const parsedToken=JSON.parse(tokendatalocal);
+        const id=parsedToken.tokenid;
+        const data={
+          tokenid:id,
+          ispremiumuser:true
+        }
+        const stringifyData=JSON.stringify(data);
+        localStorage.setItem("token",stringifyData);
         console.log('STATUS=',updateresponse.data.MESSAGE);
 
         alert('you are a premium user now');
         location.reload();        
 
+    }
+  
+    catch(error){
+      console.log('error while updating transaction status=',error);
+    }
     },
 };
 var rzp1 = new Razorpay(options);
 rzp1.on('payment.failed', async (response)=>{
         console.log('failed response=',response);
         try{
-        const updateresponse= await axios.post('http://127.0.0.1:5000/updatetransactionstatus',{
+        const updateresponse= await axios.post('http://127.0.0.1:3000/updatetransactionstatus',{
           order_id:options.order_id,
           payment_id:0,
           order_status:0
@@ -515,7 +543,7 @@ rzp1.on('payment.failed', async (response)=>{
         const tokendata=localStorage.getItem('token');
         const data={
           tokenid:tokendata.tokenid,
-          ispremium:1
+          ispremiumuser:false
         }
         localStorage.setItem('token',data);
         alert('TRANSACTION FAILED');
