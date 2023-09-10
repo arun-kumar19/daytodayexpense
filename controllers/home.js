@@ -1,11 +1,13 @@
-const user=require('../models/userdata');
 const order=require('../models/orders');
+const user=require('../models/userdata');
 const userexpence=require('../models/userexpence');
 const Sequelize=require('sequelize');
 const bcrypt=require('bcrypt');
 const jwt=require('jsonwebtoken');
 const Razorpay=require('razorpay');
+const sequelize = require('../util/database');
 const secretKey = '7539753909887979q78937008988080';
+
 const razorpay=new Razorpay({
   key_id:'rzp_test_NPB8btb7Mfqb03',
   key_secret:'UNVX2eym2FcksUvH6FzwBCtc'
@@ -133,41 +135,31 @@ exports.getUserExpence=async (req,res)=>{
 exports.getAddExpence=async (req,res)=>{
   const{money,description,category}=req.body;
   const token=req.header('Authorization');
-  //const tokendata=JSON.parse(data);
-  console.log('tokendata=',token);
-  //const token=tokendata.tokenid;
-  console.log('add expence token=',token);
   const id=jwt.verify(token,secretKey);
-  console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
-  try{
+  const t=await sequelize.transaction();
   const fetchuser=await user.findByPk(id);
-  let current_expences;
-  if(!fetchuser.total_expenses){
-    current_expences=0;
-  }
-else{
-  current_expences=fetchuser.total_expenses;
-}
-  if(money>=0){
-    fetchuser.total_expenses=Number(current_expences)+Number(money);
-    await fetchuser.save();
-  }
-  else{
-    fetchuser.total_expenses=Number(fetchuser.total_expenses)-Number(money);
-    await fetchuser.save();
-  }
-
-  const result=await fetchuser.createUserexpence({money,description,category});
-  
- //console.log('result=',result);
-  if(!result){
-  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
-  }
-      res.status(201).json(result);
-}
-catch(error){
-  console.log('something went wrong 13=',error);
-}
+    userexpence.create({money,description,category,userdatumId:id},{transaction:t}).then(async(expense)=>{
+     
+      let current_expences=Number(fetchuser.total_expenses)+Number(money);
+      console.log('current_expences=',current_expences);
+      user.update({total_expenses:current_expences},
+      {  where:{
+          id:id
+        },transaction:t
+      }).then(async(result)=>{
+        console.log("result=",result);
+        if(result){
+          await t.commit();
+          res.status(200).json({MESSAGE:'success',data:expense});
+        }
+      }).catch(async(err)=>{
+        console.log('something went wrong=',err);
+        await t.rollback();
+        res.status(500).json({MESSAGE:'failed',data:'na'})
+      })
+}).catch(err=>{
+  console.log('soemthing went wrong2=',err);
+})
 }
 
 exports.getProfile=async(req,res)=>{
@@ -225,32 +217,49 @@ exports.getEditExpence=async (req,res)=>{
 }
 
 exports.getDeleteExpence=async (req,res)=>{
-  const id=req.params.expenceid;
+  const expenceid=req.params.expenceid;
   const token=req.header('Authorization');
   const userid=jwt.verify(token,secretKey);
-
-  console.log('delete expence id-',id);
-  try{
-  const fetchuser=await userexpence.findByPk(id);
-
-  if(!fetchuser){
-  return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
-  }
-  //console.log('result=',fetchuser);
+  console.log('User Id=',userid, " and expence id=",expenceid);
+  const t2=await sequelize.transaction();
+  const fetchExpence=await userexpence.findByPk(expenceid);
+  //console.log('fetchExpence=',fetchExpence);
   const getUser=await user.findByPk(userid);
-  getUser.total_expenses=Number(getUser.total_expenses)-Number(fetchuser.money);
-  await getUser.save()
-  const expenceadminid=fetchuser.userdatumId
-    await fetchuser.destroy();
-    const updatedexpences=await userexpence.findAll({where :
-    {
-      userdatumId:expenceadminid
-    }})
-      res.status(201).json(updatedexpences);
-  }
-  catch(error){
-    console.log('error while deleting expences=',error);
-  }
+  console.log('getUser id=',getUser.id, 'and expenceid=',expenceid);
+  const updatedExpense=Number(getUser.total_expenses)-Number(fetchExpence.money);
+  console.log('updatedExpense=',updatedExpense);
+  
+    user.update(
+        {
+        total_expenses:updatedExpense
+        },{
+          where:{
+            id:userid
+          }
+         // ,transaction:t2
+        }).then(async(result2)=>{
+            console.log('result2=',result2);
+
+            userexpence.destroy({
+              where:{id:expenceid}}
+              ,{transaction:t2}
+              ).then(async(result)=>{
+                        console.log('deleted result=',result);
+        if(result){
+        //await getUser.save();
+        await t2.commit();
+          console.log('result=',result);
+          res.status(200).json(fetchExpence);
+        }
+      }).catch(async(error)=>{
+    console.log('something went wrong=',error);
+      await t2.rollback();
+      res.status(500).json({'MESSAGE':'FAILED'});  
+    }
+  ).catch(err=>{
+  console.log('soemthing went wrong2=',err);
+})
+})
 }
 
 exports.getSingleUserExpences=async (req,res)=>{
@@ -383,7 +392,7 @@ exports.getLeaderBoard=async (req,res)=>{
       attributes: ['name','total_expenses'],
 
     })
-  console.log('checkuser=',groupbyuser,' userlength=',groupbyuser.length);
+  //console.log('checkuser=',groupbyuser,' userlength=',groupbyuser.length);
   if(!groupbyuser){
   return res.status(404).json({'status':0})//user exists
   }

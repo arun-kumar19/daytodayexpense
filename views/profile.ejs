@@ -199,7 +199,7 @@ const buttonSubmit=document.getElementById('submit');
 const tokendata=localStorage.getItem('token');
         const abc=JSON.parse(tokendata)
       const token=abc.tokenid;
-      const ispremiumuser=abc.ispremium;
+      const ispremiumuser=abc.ispremiumuser;
 
 const jsonData = {
 money: money,
@@ -308,10 +308,11 @@ console.log('Moeny=',money, 'description=',description, 'category=',category);
   }
 console.log('form data=',expencedata);
 const response=await axios.post('/addexpence',expencedata,{headers:{'Authorization':token}},);
-console.log('response data=',response);
-if(response){
+console.log('response data1=',response.data.MESSAGE);
+const status=response.data.MESSAGE;
+if(status==='success'){
   alert('expence created successfully');
-  const user=response.data;
+  const user=response.data.data;
   document.getElementById('money').value='';
   document.getElementById('description').value='';
   document.getElementById('category').value='';
@@ -343,11 +344,12 @@ if(response){
 }
 }
 else{
-  console.log('something went wrong');
+  console.log('something went wrong-',response.data.MESSAGE);
 }
 } 
        catch (error) {
-        console.error('Error fetching users:', error);
+        alert('internal server error ')
+        console.error('Error fetching users:', error.response.data.MESSAGE,' with status code=',error.response.status);
       }
 
 
