@@ -38,12 +38,21 @@
       <label for="password">Password:</label>
       <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
     </div>
-    <button type="submit" class="btn btn-primary" id="submit">Sign In</button>
-    <p><a href='signup'>New User - Sign UP Now</a></p>
-    <p><% if(status==0){%>Invalid Email id<%}%>
-    <% if(status==2){%>Invalid password<%}%>
-    <a href='signup'><% if(status==3){%>You are not registered. Sign Up Now<%}%></a></p>
-  </form>
+    <div class="container">
+    <div class="row">
+        <div class="col-sm">
+        <button type="submit" class="btn btn-primary" id="submit">Sign In</button>
+        </div>
+    <!--<p><% if(status==0){%>Invalid Email id<%}%>-->
+    <!--<% if(status==2){%>Invalid password<%}%>
+    <a href='signup'><% if(status==3){%>You are not registered. Sign Up Now<%}%></a></p>-->
+    <div class="col-8">
+      <p><a href='forgetpassword' class="btn btn-primary" target="_blank">Forget Passsword</a></p>
+    </div>
+</div>
+</div>
+</form>
+  <p><a href='signup'>New User - Sign UP Now</a></p>
 </div>
 <div class="col-sm">
 

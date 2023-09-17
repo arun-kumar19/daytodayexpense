@@ -7,6 +7,10 @@ const jwt=require('jsonwebtoken');
 const Razorpay=require('razorpay');
 const sequelize = require('../util/database');
 const secretKey = '7539753909887979q78937008988080';
+var Brevo = require('@getbrevo/brevo');
+const sib = require('sib-api-v3-sdk');
+
+//require('dotenv').config();
 
 const razorpay=new Razorpay({
   key_id:'rzp_test_NPB8btb7Mfqb03',
@@ -403,3 +407,142 @@ exports.getLeaderBoard=async (req,res)=>{
   }
 }
 
+exports.getForgetPasswordUser=async (req,res)=>{
+
+  
+  res.render('forgetpassword',{
+    path:'/forgetpassword'
+  })
+  
+}
+
+exports.getForgetPassword=async (req,res)=>{
+
+  const emailid=req.params.emailid;
+  console.log('email=',emailid);
+  
+  const userdata=await user.findAll({where:{
+    email:emailid
+  }});
+
+  console.log('userdata:',userdata);
+  if(!userdata){
+    res.status(500).json({status:0});
+
+  }
+  const userid=userdata[0].id;
+  console.log('userid=',userid);
+
+  var defaultClient = sib.ApiClient.instance;
+  
+  // Configure API key authorization: api-key
+  const apiKey = defaultClient.authentications['api-key'];
+  apiKey.apiKey = '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';
+  
+  
+  var apiInstance = new sib.TransactionalEmailsApi();
+
+  const receivers=[
+    {
+       "email":emailid
+    }
+  ];
+  const sender={ 
+      "email":"arunklt21@gmail.com", 
+      "name":"Arun Kumar"
+    };
+  
+  
+  apiInstance.sendTransacEmail({
+    sender,
+    to:receivers,
+    subject:"Forget Password",
+    "htmlContent": `
+    <!DOCTYPE html><html><body><h1>Generate New Password</h1>
+    <p><a href="http://127.0.0.1:3000/changepassword/{{params.id}}">Change Password</a></p></body></html>`,
+    params: {
+      id:userid,  
+    },
+
+  }).then(function(data) {
+    console.log('API called successfully. Returned data: ' + data);
+    res.status(200).json({status:1});
+  }).catch(function(error) {
+    console.error('GETTING ERROR=',error);
+    res.status(500).send('Error sending email.');
+  });
+}
+
+exports.getChangePassword=async (req,res)=>{
+
+  
+  res.render('changepassword',{
+    path:'changePassword'
+  })
+  
+}
+
+exports.getChangePasswordUser=async (req,res)=>{
+  const saltRounds = 10;
+  const newpassword=req.body.updatedpassword;
+  const userid=req.params.userid;
+
+  console.log('newpassword:',newpassword,' userid:',userid);
+
+  const getUser=await user.findByPk(userid);
+  const emailid=getUser.email;
+  console.log('emailid:',emailid);
+
+  bcrypt.hash(newpassword,saltRounds,(err,hash)=>{
+    if(err)
+    console.error('Error hashing password',err);
+  else{
+    //console.log('hash password=',hash);
+    getUser.update({password:hash}).then(async(result)=>{
+      await getUser.save();
+    console.log('password updated succesfully');
+
+    //email for update password
+    var defaultClient = sib.ApiClient.instance;
+  
+    // Configure API key authorization: api-key
+    const apiKey = defaultClient.authentications['api-key'];
+    apiKey.apiKey = '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';
+    
+    
+    var apiInstance = new sib.TransactionalEmailsApi();
+  
+    const receivers=[
+      {
+         "email":emailid
+      }
+    ];
+    const sender={ 
+        "email":"arunklt21@gmail.com", 
+        "name":"Arun Kumar"
+      };
+    
+    
+    apiInstance.sendTransacEmail({
+      sender,
+      to:receivers,
+      subject:"Password Changed Successfully",
+      "htmlContent": `
+      <!DOCTYPE html><html><body><h1>Login Now from given link</h1>
+      <p><a href="http://127.0.0.1:3000/login">Login Now</a></p></body></html>`
+  
+    }).then(function(data) {
+      console.log('API called successfully. Returned data: ' + data);
+    }).catch(function(error) {
+      console.error('GETTING ERROR=',error);
+      res.status(500).send('Error sending email.');
+    });
+
+    res.status(200).json({ispasswordchanged:1});
+  }).catch(err=>{
+    console.log('soemthing went wrong =',err);
+  })
+}
+})
+ 
+}
