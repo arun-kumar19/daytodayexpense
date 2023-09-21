@@ -9,6 +9,8 @@ const sequelize = require('../util/database');
 const secretKey = '7539753909887979q78937008988080';
 var Brevo = require('@getbrevo/brevo');
 const sib = require('sib-api-v3-sdk');
+const { v4: uuidv4 } = require('uuid');
+const ForgotPasswordRequests = require('../models/forgotpasswordrequests');
 
 //require('dotenv').config();
 
@@ -420,12 +422,13 @@ exports.getForgetPassword=async (req,res)=>{
 
   const emailid=req.params.emailid;
   console.log('email=',emailid);
-  
+  const uuid=uuidv4(); //'9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+  console.log("uuid=",uuid);
   const userdata=await user.findAll({where:{
     email:emailid
   }});
 
-  console.log('userdata:',userdata);
+  //console.log('userdata:',userdata);
   if(!userdata){
     res.status(500).json({status:0});
 
@@ -433,11 +436,17 @@ exports.getForgetPassword=async (req,res)=>{
   const userid=userdata[0].id;
   console.log('userid=',userid);
 
+  const status=await ForgotPasswordRequests.create({uuid,isactive:true,userdatumId:userid});
+
+  if(!status){
+    console.log('something went wrong in forgotpasswordrequests=',status);
+  }
+  else{
   var defaultClient = sib.ApiClient.instance;
   
   // Configure API key authorization: api-key
   const apiKey = defaultClient.authentications['api-key'];
-  apiKey.apiKey = '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';
+  apiKey.apiKey ='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';
   
   
   var apiInstance = new sib.TransactionalEmailsApi();
@@ -459,9 +468,9 @@ exports.getForgetPassword=async (req,res)=>{
     subject:"Forget Password",
     "htmlContent": `
     <!DOCTYPE html><html><body><h1>Generate New Password</h1>
-    <p><a href="http://127.0.0.1:3000/changepassword/{{params.id}}">Change Password</a></p></body></html>`,
+    <p><a href="http://127.0.0.1:3000/password/resetpassword/{{params.id}}">Change Password</a></p></body></html>`,
     params: {
-      id:userid,  
+      id:uuid,  
     },
 
   }).then(function(data) {
@@ -472,42 +481,67 @@ exports.getForgetPassword=async (req,res)=>{
     res.status(500).send('Error sending email.');
   });
 }
+}
 
 exports.getChangePassword=async (req,res)=>{
 
-  
+  const forgotpasswordrequestid=req.params.forgotpasswordrequestid;
+
+  const getStatus=await ForgotPasswordRequests.findAll({where:{
+    uuid:forgotpasswordrequestid
+  }})
+
+  console.log('getStatus=',getStatus[0].isactive);
+  if(getStatus[0].isactive){
   res.render('changepassword',{
     path:'changePassword'
   })
-  
+}
+else
+{
+  res.status(404).send("link expired");
+}
 }
 
 exports.getChangePasswordUser=async (req,res)=>{
   const saltRounds = 10;
   const newpassword=req.body.updatedpassword;
-  const userid=req.params.userid;
+  const forgotpasswordrequestid=req.params.userid;
 
-  console.log('newpassword:',newpassword,' userid:',userid);
+  console.log('newpassword:',newpassword,' forgotpasswordrequestid:',forgotpasswordrequestid);
 
+  const getRequest=await ForgotPasswordRequests.findAll({where:{
+    uuid:forgotpasswordrequestid}}
+    );
+    console.log('getRequest=',getRequest);
+  const userid=getRequest[0].userdatumId;
   const getUser=await user.findByPk(userid);
   const emailid=getUser.email;
-  console.log('emailid:',emailid);
-
+  const getForgetPasswordRequest=await ForgotPasswordRequests.findAll({where:{
+    uuid:forgotpasswordrequestid
+  }})
+  //console.log('userid of user:',userid, ' emailid=',emailid, ' and getForgetPasswordRequest=',getForgetPasswordRequest[0].isactive);
+  //console.log('getUser Data:',getUser);
   bcrypt.hash(newpassword,saltRounds,(err,hash)=>{
-    if(err)
+    if(err){
     console.error('Error hashing password',err);
+    }
   else{
     //console.log('hash password=',hash);
     getUser.update({password:hash}).then(async(result)=>{
       await getUser.save();
-    console.log('password updated succesfully');
-
+      getForgetPasswordRequest[0].isactive=false;
+      getForgetPasswordRequest[0].save();
+      //console.log("getForgetPasswordRequest=",getForgetPasswordRequest);
+    
+    console.log('password updated succesfully')
+  
     //email for update password
     var defaultClient = sib.ApiClient.instance;
   
     // Configure API key authorization: api-key
     const apiKey = defaultClient.authentications['api-key'];
-    apiKey.apiKey = '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';
+    apiKey.apiKey = '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';
     
     
     var apiInstance = new sib.TransactionalEmailsApi();
@@ -544,5 +578,4 @@ exports.getChangePasswordUser=async (req,res)=>{
   })
 }
 })
- 
-}
+  }

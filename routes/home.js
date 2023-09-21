@@ -30,7 +30,7 @@ router.get('/userstatus', homeController.getUserStatus);
 router.get('/leaderboard', homeController.getLeaderBoard);
 router.get('/forgetpassword', homeController.getForgetPasswordUser);
 router.get('/password/forgetpassword/:emailid', homeController.getForgetPassword);
-router.get('/changepassword/:userid', homeController.getChangePassword);
+router.get('/password/resetpassword/:forgotpasswordrequestid', homeController.getChangePassword);
 router.put('/changepassword/:userid', homeController.getChangePasswordUser);
 
 module.exports=router;

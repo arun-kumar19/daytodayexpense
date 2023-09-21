@@ -4,6 +4,7 @@ const sequelize=require('./util/database');
 const user=require('./models/userdata');
 const userexpence=require('./models/userexpence');
 const order=require('./models/orders');
+const forgotpasswordrequests=require('./models/forgotpasswordrequests');
 const app=express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -19,6 +20,8 @@ user.hasMany(userexpence);
 userexpence.belongsTo(user);
 user.hasMany(order);
 order.belongsTo(user);
+user.hasMany(forgotpasswordrequests);
+forgotpasswordrequests.belongsTo(user);
 
 app.use(homeRoute);
 
