@@ -12,7 +12,7 @@ router.get('/', homeController.getSignIn);
 router.post('/', homeController.getLogin);
 
 router.get('/demo', homeController.getDemo);
-
+router.get('/export/:token', homeController.getExport);
 router.post('/signup', homeController.getUser);
 router.get('/signup', homeController.getSignUp);
 router.post('/login', homeController.getLogin);

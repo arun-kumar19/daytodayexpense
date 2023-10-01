@@ -90,14 +90,17 @@ const token=response.data.token;
 console.log('ispremium=',response.data.userdata.ispremiumuser);
   const data={
     tokenid:token,
-    ispremium:ispremium
+    ispremiumuser:ispremium
   }
   const str=JSON.stringify(data);
 localStorage.setItem('token',str);
 console.log('status=',status);
 if(status==1){
   alert('login successful');
- window.location.href='/profile'
+  const firstUrl='/profile/';
+  const completeUrl=firstUrl.concat(token);
+  console.log('completeURL=',completeUrl);
+ window.location.href='/profile';
 }
 
 }).catch(error=>{

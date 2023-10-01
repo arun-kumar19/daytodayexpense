@@ -7,12 +7,11 @@ const jwt=require('jsonwebtoken');
 const Razorpay=require('razorpay');
 const sequelize = require('../util/database');
 const secretKey = '7539753909887979q78937008988080';
-var Brevo = require('@getbrevo/brevo');
 const sib = require('sib-api-v3-sdk');
 const { v4: uuidv4 } = require('uuid');
 const ForgotPasswordRequests = require('../models/forgotpasswordrequests');
-
-//require('dotenv').config();
+const moment=require("moment");
+var data_exporter = require('json2csv').Parser;
 
 const razorpay=new Razorpay({
   key_id:'rzp_test_NPB8btb7Mfqb03',
@@ -139,12 +138,16 @@ exports.getUserExpence=async (req,res)=>{
 
 
 exports.getAddExpence=async (req,res)=>{
-  const{money,description,category}=req.body;
+  const{date,expencetype,money,description,category}=req.body;
   const token=req.header('Authorization');
   const id=jwt.verify(token,secretKey);
   const t=await sequelize.transaction();
   const fetchuser=await user.findByPk(id);
-    userexpence.create({money,description,category,userdatumId:id},{transaction:t}).then(async(expense)=>{
+ 
+  const date1=moment(date).format('YYYY-MM-DD');
+  console.log('date1=',date1);
+
+    userexpence.create({date:date1,type:expencetype,money,description,category,userdatumId:id},{transaction:t}).then(async(expense)=>{
      
       let current_expences=Number(fetchuser.total_expenses)+Number(money);
       console.log('current_expences=',current_expences);
@@ -169,9 +172,10 @@ exports.getAddExpence=async (req,res)=>{
 }
 
 exports.getProfile=async(req,res)=>{
+  //const userid=req.params.id
   res.render('profile',{
     path:'/profile',
-  
+    //id:userid,
     });
   
 }
@@ -276,7 +280,12 @@ exports.getSingleUserExpences=async (req,res)=>{
 
   const fetchuser=await userexpence.findAll({where:{
     userdatumId:id
-  }});
+  },
+order:[
+  ['date','ASC'],
+  ['type','ASC']
+  
+]});
   
   if(!fetchuser){
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
@@ -579,3 +588,39 @@ exports.getChangePasswordUser=async (req,res)=>{
 }
 })
   }
+
+
+exports.getExport=async(request, response, next)=>{
+    const token=request.params.token;
+    console.log('token=',token);
+  const userid=jwt.verify(token,secretKey);
+  console.log('userid=',userid);
+  userexpence.findAll({ where :{
+    userdatumId:userid
+  }}).then(data=>{
+      console.log('data=',data);
+        var mysql_data = JSON.parse(JSON.stringify(data));
+       
+        //convert JSON to CSV Data
+
+        var file_header = ['A', 'B', 'C', 'D','E','F','G','H','I'];
+
+        var json_data = new data_exporter({file_header});
+        if(data.length>0){
+        var csv_data = json_data.parse(mysql_data);
+      }
+      else{
+        var csv_data = json_data.parse({'A':'na','B':'na','C':'na','D':'na','E':'na','F':'na','G':'na','H':'na','I':'na',});
+      }
+        console.log('csv_data=',csv_data);
+        response.setHeader("Content-Type", "text/csv");
+
+        response.setHeader("Content-Disposition", "attachment; filename=sample_data.csv");
+
+        response.status(200).end(csv_data);
+
+    }).catch(error=>{
+      console.log('there is some error=',error);
+    })
+
+}

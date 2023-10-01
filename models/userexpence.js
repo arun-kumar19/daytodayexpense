@@ -10,6 +10,14 @@ id:{
   allowNull:false,
   primaryKey:true
 },
+date:{
+  type:Sequelize.DATEONLY,
+  allowNull:true
+},
+type:{
+  type:Sequelize.INTEGER,
+  allowNull:false
+},
 money:{
 type:Sequelize.INTEGER,
 allowNull:false

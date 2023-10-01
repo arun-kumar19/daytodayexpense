@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/img/favicon.png" type="image/x-icon">
   <title>Welcome</title>
   <!-- Include Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -15,7 +16,11 @@
 <button type="submit" id="buypremium" class="btn btn-success" onclick="buypremium()">Buy Premium</button>
   </div>
  <div class="col-sm border border-primary">
- 
+  <div class="form-group">
+    <label for="money">Date:</label>
+    <input type="date" class="form-control" id="date" name="date" required>
+  </div>
+
     <div class="form-group">
       <label for="money">Money:</label>
       <input type="text" class="form-control" id="money" name="money" required>
@@ -35,13 +40,27 @@
               <option value="Outdoor">Outdoor</a>
               <option value="Other">Other</a>
             </select>
-            
-    </div>
+    </div>  
   <input type="hidden" id="expenceid">    
-    <button type="submit" class="btn btn-primary" id="submit" onclick="addexpence()">Add Expence</button>
+    <button type="submit" class="btn btn-primary" id="submit" onclick="addexpence(2)">Add Expence</button>
+    <button type="submit" class="btn btn-primary" id="income" onclick="addexpence(1)">Add Income</button>
+    <a  class="btn btn-primary disabled" id="exportdata">Download</a>
     <h3 id="userexpences"></h3>
-    <ul id="expencelist"></ul>
- 
+    <table id="expencelist" class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">date</th>
+          <th scope="col">description</th>
+          <th scope="col">category</th>
+          <th scope="col">income</th>
+          <th scope="col">expence</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+
+      </tbody>
+    </table>
+
 </div>
 <div class="col-sm">
 <p class="ml-5" id="username"></p>
@@ -63,16 +82,18 @@
 <script>
 
 async function fetchexpences(){
-
-    try{
+    
       const tokendata=localStorage.getItem('token');
         const abc=JSON.parse(tokendata)
-      const token=abc.tokenid;
-      const ispremiumuser=abc.ispremiumuser;
+       const token=abc.tokenid;
+       const ispremiumuser=abc.ispremiumuser  ;
+
       console.log('token-',token,' ispremiumuser-',ispremiumuser);
-        //  const id=document.getElementById('userid').value
+        //  const id=document.getElementById('userid').value;
+        try{
           const response=await axios.get('userexpences',{headers:{'Authorization':token}});
           const user=response.data;
+          console.log('fetch user data=',response);
           const userstatus=await axios.get('userstatus',{headers:{'Authorization':token}});
           console.log('userstatus=',userstatus)
           if(userstatus){
@@ -80,8 +101,7 @@ async function fetchexpences(){
         console.log('userstatus=',user, 'username=',username);
         const formatString=`Welcome ${username}!`;
         document.getElementById('username').innerText=formatString
-       // console.log('user status=',userstatus.data);
-
+       // console.log('user status=',userstatus.data); 
           }
         
         if(ispremiumuser){
@@ -94,6 +114,11 @@ async function fetchexpences(){
           button.type="submit"
           button.textContent="Leader Board";
           div.appendChild(button);
+
+          const downloadId=document.getElementById("exportdata");
+            const newUrl="/export/".concat(token);
+            downloadId.href=newUrl;
+            downloadId.className="btn btn-primary"
         }
    //    console.log('loaded content=',user.length); 
 
@@ -101,7 +126,7 @@ async function fetchexpences(){
 
         // Render each user as a list item
           for(let i=0;i<user.length;i++){
-            document.getElementById("userexpences").textContent="Expenses"
+            document.getElementById("userexpences").textContent="All Expenses and Income"
           const listItem = document.createElement('li');
             const editButton=document.createElement('button');
             editButton.value='Edit';
@@ -115,13 +140,44 @@ async function fetchexpences(){
             deleteButton.onclick=deleteItem;
             deleteButton.className='deleteItem';
             deleteButton.textContent='Delete';
+            const previousdate=user[i].date;
+            const value= `${user[i].date} ${user[i].money} ${user[i].description} ${user[i].category} `;
+            console.log('format=',value);
+            let table = document.getElementById("tableBody");
+   
+   // Create row element
+   let row = document.createElement("tr")
+   
+   // Create cells
+   let c1 = document.createElement("td")
+   let c2 = document.createElement("td")
+   let c3 = document.createElement("td")
+   let c4 = document.createElement("td")
+   let c5= document.createElement("td")
+   
+   // Insert data to cells
+   c1.innerText =user[i].date;
+   c2.innerText = user[i].description;
+   c3.innerText = user[i].category
 
-           const value= `${user[i].money} ${user[i].description} ${user[i].category} `;
-           listItem.textContent=value;
-           listItem.appendChild(editButton);
-           listItem.appendChild(deleteButton);
-          userList.appendChild(listItem);
-
+   // Append cells to row
+   
+   if(user[i].type===1){
+    c4.innerText = user[i].money;
+  }
+  if(user[i].type===2){
+    c5.innerText = user[i].money;
+  }
+   
+  row.appendChild(c1);
+   row.appendChild(c2);
+   row.appendChild(c3);
+   row.appendChild(c4);
+   row.appendChild(c5);
+   // Append row to table body
+   table.appendChild(row)
+   
+  }
 //uploading and redering code above
 
 async function editItem(event){
@@ -228,7 +284,7 @@ const response=await axios.put(`/updateexpence/${id}`,jsonData,{headers:{'Author
             deleteButton.onclick=deleteItem;
             deleteButton.textContent='Delete';
 
-           const value= `${user.money} ${user.description} ${user.category} `;
+           const value= `${user.date} ${user.money} ${user.description} ${user.category} `;
            listItem.textContent=value;
            listItem.appendChild(editButton);
            listItem.appendChild(deleteButton);
@@ -248,10 +304,6 @@ alert('product updated successfully');
 
 }
 
-
-
-
-}
 
 async function showleaderboard(){
   try{
@@ -288,23 +340,27 @@ async function showleaderboard(){
 
 document.addEventListener("DOMContentLoaded",fetchexpences);
 
-async function addexpence(){
+async function addexpence(type){
   console.log('addexpence function called');
+
   try {
   const money=document.getElementById('money').value;
   const description=document.getElementById('description').value;
   const category=document.getElementById('category').value;
+  const date=document.getElementById('date').value;
   const tokendata=localStorage.getItem('token');
   const abc=JSON.parse(tokendata);
   const token=abc.tokenid;
-  const userstatus=abc.ispremium;
+  const userstatus=abc.ispremiumuser;
   const ul=document.getElementById('expencelist');
-console.log('Moeny=',money, 'description=',description, 'category=',category);
+console.log('date=',date, 'Moeny=',money, 'description=',description, 'category=',category);
   if(money && description && category){
   const expencedata={
+    date:date,
     money:money,
     description:description,
     category:category,
+    expencetype:type
   }
 console.log('form data=',expencedata);
 const response=await axios.post('/addexpence',expencedata,{headers:{'Authorization':token}},);
@@ -336,7 +392,7 @@ if(status==='success'){
             deleteButton.className='deleteItem';
             deleteButton.textContent='Delete';
 
-           const value= `${user.money} ${user.description} ${user.category} `;
+           const value= `${user.date} ${user.money} ${user.description} ${user.category} `;
            listItem.textContent=value;
            listItem.appendChild(editButton);
            listItem.appendChild(deleteButton);
@@ -457,7 +513,7 @@ const response=await axios.put(`/updateexpence/${id}`,jsonData,{headers:{'Author
             deleteButton.onclick=deleteItem;
             deleteButton.textContent='Delete';
           document.getElementById('expenceid').value=user.id
-           const value= `${user.money} ${user.description} ${user.category} `;
+           const value= `${user.date} ${user.money} ${user.description} ${user.category} `;
            listItem.textContent=value;
            listItem.appendChild(editButton);
            listItem.appendChild(deleteButton);
@@ -483,7 +539,7 @@ async function buypremium(e){
   const tokendata=localStorage.getItem('token');
   const abc=JSON.parse(tokendata);
   const token=abc.tokenid;
-  const userstatus=abc.ispremium;
+  const userstatus=abc.ispremiumuser;
   console.log('userstatus=',userstatus, 'token=',token);
   if(userstatus){
     confirm('You are premium user');
@@ -567,8 +623,6 @@ rzp1.on('payment.failed', async (response)=>{
     
   }
 }
-
-
 
 </script>
 
