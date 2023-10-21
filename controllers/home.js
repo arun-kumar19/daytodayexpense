@@ -12,6 +12,8 @@ const { v4: uuidv4 } = require('uuid');
 const ForgotPasswordRequests = require('../models/forgotpasswordrequests');
 const moment=require("moment");
 var data_exporter = require('json2csv').Parser;
+const S3Services=require('../services/s3services');
+const userdownload=require('../models/userdownloads');
 
 const razorpay=new Razorpay({
   key_id:'rzp_test_NPB8btb7Mfqb03',
@@ -129,7 +131,7 @@ exports.getUserExpence=async (req,res)=>{
   const fetchuser=await userexpence.findAll({where:{
     userdatumId:userid
   }});
-  console.log('result=',fetchuser);
+  //console.log('result=',fetchuser);
   if(!fetchuser){
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
   }
@@ -156,7 +158,7 @@ exports.getAddExpence=async (req,res)=>{
           id:id
         },transaction:t
       }).then(async(result)=>{
-        console.log("result=",result);
+        //console.log("result=",result);
         if(result){
           await t.commit();
           res.status(200).json({MESSAGE:'success',data:expense});
@@ -172,10 +174,8 @@ exports.getAddExpence=async (req,res)=>{
 }
 
 exports.getProfile=async(req,res)=>{
-  //const userid=req.params.id
   res.render('profile',{
     path:'/profile',
-    //id:userid,
     });
   
 }
@@ -184,7 +184,7 @@ exports.getUpdatedExpence=async (req,res)=>{
   console.log('getUpdatedExpence');
   const{money,description,category}=req.body;
   const token=req.header('Authorization');
-  console.log('user token id-',token);
+  //console.log('user token id-',token);
   const tokenid=jwt.verify(token,secretKey);
     const id=req.params.expenceid;
   console.log('Money-',money,' Description -',description, 'category-',category, 'id-',id);
@@ -274,7 +274,7 @@ exports.getDeleteExpence=async (req,res)=>{
 
 exports.getSingleUserExpences=async (req,res)=>{
   const token=req.header('Authorization');
-  console.log('user token id-',token);
+  //console.log('user token id-',token);
   
   const id=jwt.verify(token,secretKey);
 
@@ -290,8 +290,38 @@ order:[
   if(!fetchuser){
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
   }
-  //console.log('result=',fetchuser);
-      res.status(201).json(fetchuser);
+
+  
+  const uniquedate=await userexpence.findAll({
+attributes:[
+  [Sequelize.fn('DISTINCT',Sequelize.col('date')),'abc']
+],
+where:{
+  userdatumId:id
+},
+order:[
+  ['date','ASC']
+]});
+
+const uniquedateStringify=JSON.stringify(uniquedate);
+const slicedString=uniquedateStringify.slice(0,uniquedateStringify.length);
+//console.log('newString=',slicedString);
+//console.log('uniquedateStringify=',uniquedateStringify);
+
+const updatedStr=slicedString.substring(1,slicedString.length-1);
+//console.log('updatedStr=',updatedStr);
+const arr=updatedStr.split(",")
+//console.log('data type=',typeof arr);
+const datearr=[];
+
+for(let i=0;i<arr.length;i++){
+
+  //console.log(arr[i]);
+  datearr.push(arr[i].substring(8,arr[i].length-2));
+
+}
+ console.log('result=',datearr);
+      res.status(201).json({'userdata':fetchuser,'uniquedate':datearr});
 }
 
 exports.getPremiumPayment=async (req,res)=>{
@@ -594,11 +624,14 @@ exports.getExport=async(request, response, next)=>{
     const token=request.params.token;
     console.log('token=',token);
   const userid=jwt.verify(token,secretKey);
-  console.log('userid=',userid);
+  const userstatus=await user.findByPk(userid);
+  //console.log('userstatus=',userstatus.ispremiumuser);
+  if(userstatus.ispremiumuser){
+  //console.log('userid=',userid);
   userexpence.findAll({ where :{
     userdatumId:userid
   }}).then(data=>{
-      console.log('data=',data);
+      //console.log('data=',data);
         var mysql_data = JSON.parse(JSON.stringify(data));
        
         //convert JSON to CSV Data
@@ -612,7 +645,7 @@ exports.getExport=async(request, response, next)=>{
       else{
         var csv_data = json_data.parse({'A':'na','B':'na','C':'na','D':'na','E':'na','F':'na','G':'na','H':'na','I':'na',});
       }
-        console.log('csv_data=',csv_data);
+        //console.log('csv_data=',csv_data);
         response.setHeader("Content-Type", "text/csv");
 
         response.setHeader("Content-Disposition", "attachment; filename=sample_data.csv");
@@ -622,5 +655,223 @@ exports.getExport=async(request, response, next)=>{
     }).catch(error=>{
       console.log('there is some error=',error);
     })
+  }
+  else{
+    response.status(401).send("Unauthorized");
+  }
+}
 
+exports.getMonthlyReport=async(request, response, next)=>{
+  const token=request.params.token;
+  console.log('token=',token);
+const userid=jwt.verify(token,secretKey);
+const userstatus=await user.findByPk(userid);
+//console.log('userstatus=',userstatus.ispremiumuser);
+if(userstatus.ispremiumuser){
+//console.log('userid=',userid);
+userexpence.findAll({ where :{
+  userdatumId:userid
+}}).then(data=>{
+    //console.log('data=',data);
+      var mysql_data = JSON.parse(JSON.stringify(data));
+     
+      //convert JSON to CSV Data
+
+      var file_header = ['A', 'B', 'C', 'D','E','F','G','H','I'];
+
+      var json_data = new data_exporter({file_header});
+      if(data.length>0){
+      var csv_data = json_data.parse(mysql_data);
+    }
+    else{
+      var csv_data = json_data.parse({'A':'na','B':'na','C':'na','D':'na','E':'na','F':'na','G':'na','H':'na','I':'na',});
+    }
+      //console.log('csv_data=',csv_data);
+      response.setHeader("Content-Type", "text/csv");
+
+      response.setHeader("Content-Disposition", "attachment; filename=sample_data.csv");
+
+      response.status(200).end(csv_data);
+
+  }).catch(error=>{
+    console.log('there is some error=',error);
+  })
+}
+else{
+  response.status(401).send("Unauthorized");
+}
+}
+
+exports.getMonthlyReport=async(req,res)=>{
+
+  const token=req.header('Authorization');
+  const userid=jwt.verify(token,secretKey);
+console.log('userid=',userid);
+try{
+  const result = await userexpence.findAll({
+    attributes: [
+        [sequelize.fn('YEAR', sequelize.col('DATE')), 'YEAR'],
+        [sequelize.fn('MONTH', sequelize.col('DATE')), 'MONTH_NUM'],
+        [sequelize.fn('MONTHNAME', sequelize.col('DATE')), 'MONTH'],
+        [sequelize.fn('MAX', sequelize.literal('CASE WHEN TYPE = 1 THEN MONEY ELSE 0 END')), 'INCOME'],
+        [sequelize.fn('MAX', sequelize.literal('CASE WHEN TYPE = 2 THEN MONEY ELSE 0 END')), 'EXPENCES']
+    ],
+    where: {
+        userdatumId: userid
+    },
+    group: [
+        sequelize.fn('YEAR', sequelize.col('DATE')),
+        sequelize.fn('MONTH', sequelize.col('DATE')),
+        sequelize.fn('MONTHNAME', sequelize.col('DATE'))
+    ],
+    order: [
+        [sequelize.fn('YEAR', sequelize.col('DATE')), 'ASC'],
+        [sequelize.fn('MONTH', sequelize.col('DATE')), 'ASC']
+    ]
+});
+console.log('type=',result);
+const stringifyResult=JSON.stringify(result);
+const monthlySummary=JSON.parse(stringifyResult);
+console.log('type of monthlySummary=',typeof monthlySummary, '    monthlySummary=',monthlySummary.length);
+console.log('data=',monthlySummary[0].MONTH);
+res.status(200).send({"STATUS":"OK","DATA":monthlySummary});
+}
+catch(error){
+  console.log('something went wrong=',error);
+}
+}
+
+
+exports.getYearlyReport=async(req,res)=>{
+
+  const token=req.header('Authorization');
+  const userid=jwt.verify(token,secretKey);
+console.log('userid=',userid);
+try{
+  const result = await userexpence.findAll({
+    attributes: [
+      [sequelize.fn('YEAR', sequelize.col('DATE')), 'YEAR'],
+      [
+        sequelize.fn(
+          'SUM',
+          sequelize.literal('CASE WHEN TYPE = 1 THEN MONEY ELSE 0 END')
+        ),
+        'INCOME'
+      ],
+      [
+        sequelize.fn(
+          'SUM',
+          sequelize.literal('CASE WHEN TYPE = 2 THEN MONEY ELSE 0 END')
+        ),
+        'EXPENCES'
+      ],
+    ],
+    where:{
+      userdatumId:userid
+    },
+  
+    group: [sequelize.fn('YEAR', sequelize.col('DATE'))],
+    order:[
+        [sequelize.fn('YEAR',sequelize.col('DATE')),'ASC']
+    ]
+  });
+
+//console.log('type=',result);
+const stringifyResult=JSON.stringify(result);
+const monthlySummary=JSON.parse(stringifyResult);
+console.log('type of monthlySummary=',typeof monthlySummary, '    monthlySummary=',monthlySummary.length);
+console.log('data=',monthlySummary[0].YEAR);
+res.status(200).send({"STATUS":"OK","DATA":monthlySummary});
+}
+catch(error){
+  console.log('something went wrong=',error);
+}
+}
+
+exports.Authenticate=async (req,res,next)=>{
+  const token=req.header('Authorization');
+  console.log('token=',token);
+  const userid=jwt.verify(token,secretKey);
+console.log('userid=',userid);
+const userstaus=await user.findByPk(userid);
+console.log('userstatus=',userstaus.ispremiumuser);
+try{
+if(!userstaus.ispremiumuser){
+  res.status(401).send({status:'401'});
+}
+if(userstaus.ispremiumuser){
+  next();
+}
+}
+catch(error){
+  console.log('something went wrong=',error);
+}
+  
+}
+
+exports.getDownload=async(req,res)=>{
+
+  const token=req.header('Authorization');
+  console.log('token=',token);
+  const userid=jwt.verify(token,secretKey);
+console.log('userid=',userid);
+  
+ const data=await userexpence.findAll({where:{
+  userdatumId:userid
+ }})
+ const stringifyExpences=JSON.stringify(data);
+ //console.log('stringifydata=',stringifyExpences);
+
+var ISTTime = new Date();
+
+console.log('date=',ISTTime);
+const day=ISTTime.getDate();
+console.log('day=',day);
+const monthShort = ISTTime.toLocaleString('default', { month: 'short' });
+const year=ISTTime.getFullYear();
+const hours=ISTTime.getHours();
+const minute=ISTTime.getMinutes();
+const second=ISTTime.getSeconds();
+const formatName=day+monthShort+year+"_"+hours+"_"+minute+"_"+second;
+const filename="expences"+formatName+".txt";
+try{
+const fileUrl=await S3Services.uplaodtoS3(stringifyExpences,filename);
+ console.log('fileURL=',fileUrl);
+ await userdownload.create({userid,downloadurl:fileUrl}).then(()=>{
+   // console.log('response=',response);
+    res.status(200).json({fileUrl, "success":"true"});
+ }).catch(err=>{
+  console.log('something went wrong=',err);
+ })
+ 
+}
+catch(error){
+  console.log('error=',error);
+  res.status(500).json({success:'false',err:error});
+}
+}
+
+exports.getUrlList=async(req,res)=>{
+  
+  const token=req.header('Authorization');
+  console.log('token=',token);
+  const userid=jwt.verify(token,secretKey);
+  console.log('userid=',userid);
+  const data=await userdownload.findAll({
+    attributes:['downloadurl','createdAt'],       
+    where:{
+          userid:userid
+    }
+  })
+
+  const jsonString=JSON.stringify(data);
+  const json_array=JSON.parse(jsonString)
+  //console.log('json_array=',json_array.length);
+  //console.log('json_array=',json_array);
+
+ /* const slicedString=jsonString.substring(,jsonString.length-1)
+  console.log('slicedString=',slicedString);
+  const arr=slicedString.split(",");
+  console.log('arr=',arr[0]);*/
+  res.status(200).json({urldata:json_array,success:true});
 }
