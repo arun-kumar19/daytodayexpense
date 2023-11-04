@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/img/favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="/css/expence.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <title>Welcome</title>
+  </head>
+<body class="bg-light">
+<div class="container mt-2 bg-light">
+<div class="row">
+<div class="col-sm" id="first">
+<button type="submit" id="buypremium" class="btn btn-success" onclick="buypremium()">Buy Premium</button>
+<div id="leaderboard"></div>
+<div class="row">
+  <div class="col-sm" id="secondrow">
+    <h1 id="leaderboardheading"></h1>
+    <ul id="leaderboarddata"></ul>    
+  </div>
+</div>
+  </div>
+ <div class="col-md border border-primary">
+  <div class="form-group">
+    <label for="money">Date:</label>
+    <input type="date" class="form-control" id="date" name="date" required placeholder="Enter Date">
+  </div>
+
+    <div class="form-group">
+      <label for="money">Money:</label>
+      <input type="text" class="form-control" id="money" name="money" required>
+    </div>
+    <div class="form-group">
+      <label for="description">Description:</label>
+      <input type="text" class="form-control" id="description" name="description" required>
+    </div>
+    <label> Select Category </label>
+    <div class="form-group">
+      
+              <select id="category" title="Category">
+              <option value="Petrol">Petrol</a>
+              <option value="Grocery">Grocery</a>
+              <option value="Clothing">Clothing</a>
+              <option value="Salary">Salary</a>
+              <option value="Outdoor">Outdoor</a>
+              <option value="Other">Other</a>
+            </select>
+    </div>  
+  <input type="hidden" id="expenceid">    
+    <button type="submit" class="btn btn-primary" id="submit" onclick="addexpence(2)">Add Expence</button>
+    <button type="submit" class="btn btn-primary" id="income" onclick="addexpence(1)">Add Income</button>
+    <a class="btn btn-primary" id="exportdata">Download Excel</a>
+    <a class="btn btn-primary" id="monthly" onclick="monthlyreport()">Monthly</a>
+    <a class="btn btn-primary" id="Yearly" onclick="yearlyreport()">Yearly</a>
+    <a class="btn btn-primary" id="download" onclick="downloadreport()">Download Via AWS</a>
+    <h3 id="userexpences"></h3>
+    <table id="expencelist" class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Description</th>
+          <th scope="col">Category</th>
+          <th scope="col">Income</th>
+          <th scope="col">Expence</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+
+      </tbody>
+    </table>
+<div class="container"><center id="pagination"></center></div>
+<div>
+<h3 id="monthlyTitle" class="title"></h3>
+    <table id="monthlysummaryuser" class="table table-striped table-bordered">
+      <thead id="monthlyheading"> 
+
+      </thead>
+      <tbody id="monthlysummary">
+
+      </tbody>
+    </table>
+
+  </div>
+
+  <div>
+    <h3 id="yearlyTitle" class="title"></h3>
+        <table id="yearlysummaryuser" class="table table-striped table-bordered">
+          <thead id="yearlyheading"> 
+    
+          </thead>
+          <tbody id="yearlysummary">
+    
+          </tbody>
+        </table>
+    
+      </div>
+ 
+      <div>
+        <h3 id="title" class="title">Download List</h3>
+                    <ul id="downloadlist">
+
+            </ul>
+        
+          </div>
+
+</div>
+
+<div class="col-sm">
+<p class="ml-5" id="username"></p>
+</div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

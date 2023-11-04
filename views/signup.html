@@ -81,7 +81,7 @@ console.log('response data=',status);
 if(status==1){
 
   alert('user created successfully');
-  document.getElementById('message').innerHTML=`<a href='login'>Login Now</a>`
+  document.getElementById('message').innerHTML=`<a href='/'>Login Now</a>`
   document.getElementById('name').value='';
   document.getElementById('email').value='';
   document.getElementById('password').value='';
@@ -89,7 +89,7 @@ if(status==1){
 if(status==0){
 
 alert('User Already Exists! Login Now or try creating with different email id');
-document.getElementById('message').innerHTML=`<a href='login'> Login Now</a>`
+document.getElementById('message').innerHTML=`<a href='/'> Login Now</a>`
 }
   }
  else

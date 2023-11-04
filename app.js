@@ -8,7 +8,7 @@ const forgotpasswordrequests=require('./models/forgotpasswordrequests');
 const app=express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.set('view engine', 'ejs');
+//app.set('view engine', 'html');
 app.set('views', 'views');
 const path=require("path")
 app.use(express.static(path.join(__dirname, 'public')));
@@ -24,6 +24,7 @@ forgotpasswordrequests.belongsTo(user);
 app.use(homeRoute);
 sequelize.sync().then(()=>{
     console.log('Server Running........');
+    console.log('app path=',path.join(__dirname, 'public'));
     app.listen(3000);
 }).catch(error=>{
     console.log('error while synchnorising with database=',error);

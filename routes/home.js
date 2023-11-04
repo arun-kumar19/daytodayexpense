@@ -7,7 +7,7 @@ const homeController=require('../controllers/home');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-router.get('/', homeController.getSignIn);
+router.get('/', homeController.getSignInPage);
 
 router.post('/', homeController.getLogin);
 
@@ -36,5 +36,6 @@ router.get('/profile/monthlysummary', homeController.getMonthlyReport);
 router.get('/profile/yearlysummary', homeController.getYearlyReport);
 router.get('/profile/download', homeController.Authenticate,homeController.getDownload);
 router.get('/profile/urllist', homeController.Authenticate,homeController.getUrlList);
+router.get('/profile/items', homeController.Authenticate,homeController.getItems);
 
 module.exports=router;

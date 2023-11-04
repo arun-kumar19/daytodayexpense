@@ -1,3 +1,4 @@
+const path = require('path');
 const order=require('../models/orders');
 const user=require('../models/userdata');
 const userexpence=require('../models/userexpence');
@@ -7,7 +8,10 @@ const jwt=require('jsonwebtoken');
 const Razorpay=require('razorpay');
 const sequelize = require('../util/database');
 const secretKey = '7539753909887979q78937008988080';
-const sib = require('sib-api-v3-sdk');
+var SibApiV3Sdk = require('sib-api-v3-sdk');
+var defaultClient = SibApiV3Sdk.ApiClient.instance;
+var apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = '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';
 const { v4: uuidv4 } = require('uuid');
 const ForgotPasswordRequests = require('../models/forgotpasswordrequests');
 const moment=require("moment");
@@ -20,21 +24,17 @@ const razorpay=new Razorpay({
   key_secret:'UNVX2eym2FcksUvH6FzwBCtc'
 });
 
-
+var allData;
+var uniqueDate;
 exports.getSignUp=(req,res)=>{
-  
-  res.render('signup',{
-    path:'/',
-    status:false
-  })
+  const filePath = path.join(__dirname, '../views', 'signup.html');
+  res.sendFile(filePath);
 }
 
-exports.getSignIn=(req,res)=>{
+exports.getSignInPage=(req,res)=>{
+  const filePath = path.join(__dirname, '../views', 'login.html');  
+  res.sendFile(filePath);
   
-  res.render('login',{
-    path:'/',
-    status:true
-  })
 }
 
 exports.getDemo=(req,res)=>{
@@ -174,9 +174,9 @@ exports.getAddExpence=async (req,res)=>{
 }
 
 exports.getProfile=async(req,res)=>{
-  res.render('profile',{
-    path:'/profile',
-    });
+  const filePath = path.join(__dirname, '../views', 'profile.html');
+//console.log('path=',filePath);
+  res.sendFile(filePath);
   
 }
 
@@ -291,6 +291,9 @@ order:[
   return  res.status(406).json({'MESSAGE':'NOT ACCEPTABLE'});
   }
 
+  //const stringifyData=JSON.stringify(fetchuser);
+ const expencseJSON=fetchuser.map((expence)=>expence.toJSON());
+ allData=expencseJSON;
   
   const uniquedate=await userexpence.findAll({
 attributes:[
@@ -311,7 +314,6 @@ const slicedString=uniquedateStringify.slice(0,uniquedateStringify.length);
 const updatedStr=slicedString.substring(1,slicedString.length-1);
 //console.log('updatedStr=',updatedStr);
 const arr=updatedStr.split(",")
-//console.log('data type=',typeof arr);
 const datearr=[];
 
 for(let i=0;i<arr.length;i++){
@@ -320,8 +322,28 @@ for(let i=0;i<arr.length;i++){
   datearr.push(arr[i].substring(8,arr[i].length-2));
 
 }
- console.log('result=',datearr);
-      res.status(201).json({'userdata':fetchuser,'uniquedate':datearr});
+// console.log('result=',datearr);
+ uniqueDate=datearr; 
+ console.log('uniqueDate=',uniqueDate);
+ const currentPage=1;
+ const perPage = 2; // Number of items per page
+
+ const startIndex = (currentPage - 1) * perPage;
+ const endIndex = startIndex + perPage;
+
+ const data = allData.slice(startIndex, endIndex);
+ const allPages=Math.ceil(allData.length / perPage)>0?Math.ceil(allData.length / perPage):1;
+console.log('allPages:',allPages);
+      res.status(201).json(
+        {'userdata':data,
+        'uniqueDate':uniqueDate,
+        currentPage,
+        previousPage:currentPage-1,
+        perPage,
+        totalItems:allData.length,
+        totalPages: allPages,
+        nextPage:Number(currentPage)+1,
+      });
 }
 
 exports.getPremiumPayment=async (req,res)=>{
@@ -450,15 +472,13 @@ exports.getLeaderBoard=async (req,res)=>{
 
 exports.getForgetPasswordUser=async (req,res)=>{
 
-  
-  res.render('forgetpassword',{
-    path:'/forgetpassword'
-  })
+  const filePath = path.join(__dirname, '../views', 'forgetpassword.html');
+  res.sendFile(filePath);
   
 }
 
 exports.getForgetPassword=async (req,res)=>{
-
+  let status;
   const emailid=req.params.emailid;
   console.log('email=',emailid);
   const uuid=uuidv4(); //'9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
@@ -466,62 +486,55 @@ exports.getForgetPassword=async (req,res)=>{
   const userdata=await user.findAll({where:{
     email:emailid
   }});
-
+console.log('userdata',userdata);
   //console.log('userdata:',userdata);
-  if(!userdata){
+  if(userdata.length<1){
     res.status(500).json({status:0});
 
   }
   const userid=userdata[0].id;
-  console.log('userid=',userid);
+  console.log('userid=',userid,' and email id =',userdata[0].email);
 
-  const status=await ForgotPasswordRequests.create({uuid,isactive:true,userdatumId:userid});
+  status=await ForgotPasswordRequests.create({uuid,isactive:true,userdatumId:userid});
 
   if(!status){
     console.log('something went wrong in forgotpasswordrequests=',status);
   }
   else{
-  var defaultClient = sib.ApiClient.instance;
+    var apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    const receivers=[
+      {
+         "email":emailid
+      }
+    ];
+    const sender={ 
+        "email":"arunklt21@gmail.com", 
+        "name":"Arun Kumar"
+      };
+    
+    
+    apiInstance.sendTransacEmail({
+      sender,
+      to:receivers,
+      subject:"Forget Password",
+      "htmlContent": `
+      <!DOCTYPE html><html><body><h1>Generate New Password</h1>
+      <p><a href="http://127.0.0.1:3000/password/resetpassword/{{params.id}}">Change Password</a></p></body></html>`,
+      params: {
+        id:uuid,  
+      },
   
-  // Configure API key authorization: api-key
-  const apiKey = defaultClient.authentications['api-key'];
-  apiKey.apiKey ='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';
+    }).then(function(data) {
+      console.log('API called successfully. Returned data: ' + data);
+      res.status(200).json({status:1});
+    }).catch(function(error) {
+      console.error('GETTING ERROR=',error);
+      res.status(500).json({status:0});
+    });
+  }
   
-  
-  var apiInstance = new sib.TransactionalEmailsApi();
 
-  const receivers=[
-    {
-       "email":emailid
-    }
-  ];
-  const sender={ 
-      "email":"arunklt21@gmail.com", 
-      "name":"Arun Kumar"
-    };
-  
-  
-  apiInstance.sendTransacEmail({
-    sender,
-    to:receivers,
-    subject:"Forget Password",
-    "htmlContent": `
-    <!DOCTYPE html><html><body><h1>Generate New Password</h1>
-    <p><a href="http://127.0.0.1:3000/password/resetpassword/{{params.id}}">Change Password</a></p></body></html>`,
-    params: {
-      id:uuid,  
-    },
-
-  }).then(function(data) {
-    console.log('API called successfully. Returned data: ' + data);
-    res.status(200).json({status:1});
-  }).catch(function(error) {
-    console.error('GETTING ERROR=',error);
-    res.status(500).send('Error sending email.');
-  });
 }
-}
-
 exports.getChangePassword=async (req,res)=>{
 
   const forgotpasswordrequestid=req.params.forgotpasswordrequestid;
@@ -532,9 +545,9 @@ exports.getChangePassword=async (req,res)=>{
 
   console.log('getStatus=',getStatus[0].isactive);
   if(getStatus[0].isactive){
-  res.render('changepassword',{
-    path:'changePassword'
-  })
+
+  const filePath = path.join(__dirname, '../views', 'changepassword.html');
+  res.sendFile(filePath);
 }
 else
 {
@@ -576,14 +589,11 @@ exports.getChangePasswordUser=async (req,res)=>{
     console.log('password updated succesfully')
   
     //email for update password
-    var defaultClient = sib.ApiClient.instance;
-  
-    // Configure API key authorization: api-key
+
     const apiKey = defaultClient.authentications['api-key'];
-    apiKey.apiKey = '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';
-    
-    
-    var apiInstance = new sib.TransactionalEmailsApi();
+    apiKey.apiKey ='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';
+      
+    var apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
   
     const receivers=[
       {
@@ -602,7 +612,7 @@ exports.getChangePasswordUser=async (req,res)=>{
       subject:"Password Changed Successfully",
       "htmlContent": `
       <!DOCTYPE html><html><body><h1>Login Now from given link</h1>
-      <p><a href="http://127.0.0.1:3000/login">Login Now</a></p></body></html>`
+      <p><a href="http://127.0.0.1:3000/">Login Now</a></p></body></html>`
   
     }).then(function(data) {
       console.log('API called successfully. Returned data: ' + data);
@@ -874,4 +884,26 @@ exports.getUrlList=async(req,res)=>{
   const arr=slicedString.split(",");
   console.log('arr=',arr[0]);*/
   res.status(200).json({urldata:json_array,success:true});
+}
+
+exports.getItems=(req,res)=>{
+
+  const currentPage=Number(req.query.page);
+  console.log('current page num=',currentPage);
+ const perPage = 2; // Number of items per page
+ const startIndex = (currentPage - 1) * perPage;
+ const endIndex = startIndex + perPage;
+
+ const data = allData.slice(startIndex, endIndex);
+
+      res.status(201).json(
+        {'userdata':data,
+        'uniqueDate':uniqueDate,
+        currentPage,
+        previousPage:currentPage-1,
+        perPage,
+        totalItems:allData.length,
+        totalPages: Math.ceil(allData.length / perPage),
+        nextPage:Number(currentPage)+1,
+      });
 }
