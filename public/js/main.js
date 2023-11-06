@@ -9,13 +9,15 @@ async function fetchexpences(page=1){
     const newUrl="/export/".concat(token);
      downloadId.href=newUrl;
      downloadId.className="btn btn-primary"
-
-   //console.log('current token=',token);
+     const value=localStorage.getItem('perPageData')||2;
+     console.log('PerPageData Default Value=',value);
+    document.getElementById("dropdown").value=value
+   
    const ispremiumuser=abc.ispremiumuser  ;
-
+    const perPageData=localStorage.getItem('perPageData')||2;
   console.log('token-',token,' ispremiumuser-',ispremiumuser);
     try{
-      const response=await axios.get(`userexpences?page=${page}`,{headers:{'Authorization':token}});
+      const response=await axios.get(`userexpences?page=${page}`,{headers:{'Authorization':token,'perPageData':perPageData}});
       console.log('response=',response.data);
       const user=response.data.userdata;
       let currentPage=response.data.currentPage;
@@ -982,8 +984,10 @@ async function downloadreport(){
 
   async function pagination(pagenumber,buttontype){    
 
+    const perPageData=localStorage.getItem("perPageData");
+
     try{
-      const response=await axios.get(`items?page=${pagenumber}`,{headers:{'Authorization':token}})
+      const response=await axios.get(`items?page=${pagenumber}`,{headers:{'Authorization':token,'perPageData':perPageData}})
       console.log('response=',response.data);
       const user=response.data.userdata;
       let currentPage=response.data.currentPage;
@@ -1258,3 +1262,11 @@ async function downloadreport(){
     }
   }
   
+const dropdown=document.getElementById("dropdown");
+  dropdown.addEventListener("change",dropdownlist);
+
+  function dropdownlist(){
+    console.log('e=',this);
+    alert(this.value);
+    localStorage.setItem('perPageData',this.value)
+  }

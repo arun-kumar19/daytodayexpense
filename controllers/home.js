@@ -274,7 +274,8 @@ exports.getDeleteExpence=async (req,res)=>{
 
 exports.getSingleUserExpences=async (req,res)=>{
   const token=req.header('Authorization');
-  //console.log('user token id-',token);
+  const perPageData=req.header('perPageData');
+  console.log('perPageData-',perPageData);
   
   const id=jwt.verify(token,secretKey);
 
@@ -326,7 +327,7 @@ for(let i=0;i<arr.length;i++){
  uniqueDate=datearr; 
  console.log('uniqueDate=',uniqueDate);
  const currentPage=1;
- const perPage = 2; // Number of items per page
+ const perPage = perPageData; // Number of items per page
 
  const startIndex = (currentPage - 1) * perPage;
  const endIndex = startIndex + perPage;
@@ -887,15 +888,16 @@ exports.getUrlList=async(req,res)=>{
 }
 
 exports.getItems=(req,res)=>{
-
+  const perPageData=req.header('perPageData');
+  console.log('perPageData-',perPageData);
   const currentPage=Number(req.query.page);
   console.log('current page num=',currentPage);
- const perPage = 2; // Number of items per page
+ const perPage = Number(perPageData); // Number of items per page
  const startIndex = (currentPage - 1) * perPage;
  const endIndex = startIndex + perPage;
-
+console.log('startIndex=',startIndex,' and endIndex=',endIndex);
  const data = allData.slice(startIndex, endIndex);
-
+console.log('data=',JSON.stringify(data));
       res.status(201).json(
         {'userdata':data,
         'uniqueDate':uniqueDate,
