@@ -1,0 +1,12 @@
+{
+    "env": {
+      "NODE_ENV": "development",
+      "DATABASE":"lt_office",
+      "USERNAME":"root",
+      "PASSWORD":"Arun@12345",
+      "emailApiKey":"xsmtpsib-c81e553899e1a375bbbdce26cbbd8f53bb6cd2a5321bc4925da85dff7ddc09d7-0IjVbXyRkTLpActq",
+      "secretKey":"7539753909887979q78937008988080",
+      "razorpayKey_id":"rzp_test_NPB8btb7Mfqb03",
+      "razorpayKey_secret":"UNVX2eym2FcksUvH6FzwBCtc"
+    }
+}

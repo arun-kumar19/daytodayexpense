@@ -9,6 +9,10 @@ async function fetchexpences(page=1){
     const newUrl="/export/".concat(token);
      downloadId.href=newUrl;
      downloadId.className="btn btn-primary"
+     console.log('localStorage perPageData=',localStorage.getItem('perPageData'));
+     if(localStorage.getItem('perPageData')==null){
+      alert('hello');
+     };
      const value=localStorage.getItem('perPageData')||2;
      console.log('PerPageData Default Value=',value);
     document.getElementById("dropdown").value=value

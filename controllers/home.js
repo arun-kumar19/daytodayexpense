@@ -7,11 +7,11 @@ const bcrypt=require('bcrypt');
 const jwt=require('jsonwebtoken');
 const Razorpay=require('razorpay');
 const sequelize = require('../util/database');
-const secretKey = '7539753909887979q78937008988080';
+const secretKey = process.env.secretKey;
 var SibApiV3Sdk = require('sib-api-v3-sdk');
 var defaultClient = SibApiV3Sdk.ApiClient.instance;
 var apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = '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';
+apiKey.apiKey = process.env.emailApiKey;
 const { v4: uuidv4 } = require('uuid');
 const ForgotPasswordRequests = require('../models/forgotpasswordrequests');
 const moment=require("moment");
@@ -20,8 +20,8 @@ const S3Services=require('../services/s3services');
 const userdownload=require('../models/userdownloads');
 
 const razorpay=new Razorpay({
-  key_id:'rzp_test_NPB8btb7Mfqb03',
-  key_secret:'UNVX2eym2FcksUvH6FzwBCtc'
+  key_id:process.env.razorpayKey_id,
+  key_secret:process.env.razorpayKey_secret,
 });
 
 var allData;
@@ -592,7 +592,7 @@ exports.getChangePasswordUser=async (req,res)=>{
     //email for update password
 
     const apiKey = defaultClient.authentications['api-key'];
-    apiKey.apiKey ='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';
+    apiKey.apiKey =process.env.emailApiKey;
       
     var apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
   
