@@ -1,3 +1,4 @@
+require('dotenv').config();
 const path = require('path');
 const order=require('../models/orders');
 const user=require('../models/userdata');
@@ -8,17 +9,19 @@ const jwt=require('jsonwebtoken');
 const Razorpay=require('razorpay');
 const sequelize = require('../util/database');
 const secretKey = process.env.secretKey;
-var SibApiV3Sdk = require('sib-api-v3-sdk');
-var defaultClient = SibApiV3Sdk.ApiClient.instance;
+var Sib = require('sib-api-v3-sdk');
+var defaultClient = Sib.ApiClient.instance;
+// Configure API key authorization: api-key
 var apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.emailApiKey;
+apiKey.apiKey = process.env.emailAPIKey;
+
 const { v4: uuidv4 } = require('uuid');
 const ForgotPasswordRequests = require('../models/forgotpasswordrequests');
 const moment=require("moment");
 var data_exporter = require('json2csv').Parser;
 const S3Services=require('../services/s3services');
 const userdownload=require('../models/userdownloads');
-
+console.log('razorpayKey_id=',process.env.razorpayKey_id);
 const razorpay=new Razorpay({
   key_id:process.env.razorpayKey_id,
   key_secret:process.env.razorpayKey_secret,
@@ -487,55 +490,59 @@ exports.getForgetPassword=async (req,res)=>{
   const userdata=await user.findAll({where:{
     email:emailid
   }});
-console.log('userdata',userdata);
+//console.log('userdata',userdata);
   //console.log('userdata:',userdata);
   if(userdata.length<1){
+    console.log('no such email found in db');
     res.status(500).json({status:0});
 
   }
+  else{
   const userid=userdata[0].id;
   console.log('userid=',userid,' and email id =',userdata[0].email);
 
+  
   status=await ForgotPasswordRequests.create({uuid,isactive:true,userdatumId:userid});
 
   if(!status){
     console.log('something went wrong in forgotpasswordrequests=',status);
   }
   else{
-    var apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-    const receivers=[
-      {
-         "email":emailid
-      }
-    ];
-    const sender={ 
-        "email":"arunklt21@gmail.com", 
-        "name":"Arun Kumar"
-      };
-    
-    
-    apiInstance.sendTransacEmail({
-      sender,
-      to:receivers,
-      subject:"Forget Password",
-      "htmlContent": `
-      <!DOCTYPE html><html><body><h1>Generate New Password</h1>
-      <p><a href="http://127.0.0.1:3000/password/resetpassword/{{params.id}}">Change Password</a></p></body></html>`,
-      params: {
-        id:uuid,  
-      },
-  
-    }).then(function(data) {
-      console.log('API called successfully. Returned data: ' + data);
-      res.status(200).json({status:1});
-    }).catch(function(error) {
-      console.error('GETTING ERROR=',error);
-      res.status(500).json({status:0});
-    });
-  }
-  
+let tranEmailApi=new Sib.TransactionalEmailsApi();
 
+const sender={
+        email:'network@letstrack.in',
+        
 }
+
+const receivers=[
+  {
+    email:emailid
+  },
+]
+
+tranEmailApi.sendTransacEmail({
+  sender,
+  to:receivers,
+  subject:"Forget Password",
+  "htmlContent": `
+  <!DOCTYPE html><html><body><h1>Generate New Password</h1>
+  <p><a href="http://127.0.0.1:3000/password/resetpassword/{{params.id}}">Change Password</a></p></body></html>`,
+  params: {
+    id:uuid,  
+  },
+
+}).then(function(data) {
+  console.log('API called successfully. Returned data: ' + data);
+  res.status(200).json({status:1});
+}).catch(function(error) {
+  console.error('GETTING ERROR=',error);
+  res.status(500).json({status:0});
+});
+}
+  }
+}
+
 exports.getChangePassword=async (req,res)=>{
 
   const forgotpasswordrequestid=req.params.forgotpasswordrequestid;
@@ -590,11 +597,8 @@ exports.getChangePasswordUser=async (req,res)=>{
     console.log('password updated succesfully')
   
     //email for update password
-
-    const apiKey = defaultClient.authentications['api-key'];
-    apiKey.apiKey =process.env.emailApiKey;
       
-    var apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    var apiInstance = new Sib.TransactionalEmailsApi();
   
     const receivers=[
       {
